@@ -2,6 +2,27 @@ import {Link, useNavigate} from 'react-router';
 import {AddToCartButton} from './AddToCartButton';
 import {useAside} from './Aside';
 
+const OPTION_BASE =
+  'relative inline-flex min-w-[3rem] items-center justify-center border px-4 py-3 ' +
+  'font-display text-[0.7rem] font-semibold uppercase tracking-[0.14em] ' +
+  'transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ' +
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
+
+/**
+ * @param {{selected: boolean; available: boolean}} state
+ */
+function optionClass({selected, available}) {
+  return [
+    OPTION_BASE,
+    selected
+      ? 'border-onyx bg-onyx text-stone'
+      : 'border-onyx/20 text-onyx hover:border-onyx',
+    available ? '' : 'opacity-35',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 /**
  * @param {{
  *   productOptions: MappedProductOptions[];
@@ -11,16 +32,17 @@ import {useAside} from './Aside';
 export function ProductForm({productOptions, selectedVariant}) {
   const navigate = useNavigate();
   const {open} = useAside();
+
   return (
-    <div className="product-form">
+    <div>
       {productOptions.map((option) => {
         // If there is only a single value in the option values, don't display the option
         if (option.optionValues.length === 1) return null;
 
         return (
-          <div className="product-options" key={option.name}>
-            <h5>{option.name}</h5>
-            <div className="product-options-grid">
+          <div className="mb-10 border-t rule pt-6" key={option.name}>
+            <h2 className="tag mb-4 text-steel">{option.name.toUpperCase()}</h2>
+            <div className="flex flex-wrap gap-2">
               {option.optionValues.map((value) => {
                 const {
                   name,
@@ -40,18 +62,13 @@ export function ProductForm({productOptions, selectedVariant}) {
                   // as an anchor tag
                   return (
                     <Link
-                      className="product-options-item"
+                      className={optionClass({selected, available})}
                       key={option.name + name}
                       prefetch="intent"
                       preventScrollReset
                       replace
                       to={`/products/${handle}?${variantUriQuery}`}
-                      style={{
-                        border: selected
-                          ? '1px solid black'
-                          : '1px solid transparent',
-                        opacity: available ? 1 : 0.3,
-                      }}
+                      aria-current={selected ? 'true' : undefined}
                     >
                       <ProductOptionSwatch swatch={swatch} name={name} />
                     </Link>
@@ -65,14 +82,9 @@ export function ProductForm({productOptions, selectedVariant}) {
                   return (
                     <button
                       type="button"
-                      className={`product-options-item${exists && !selected ? ' link' : ''}`}
+                      className={optionClass({selected, available})}
                       key={option.name + name}
-                      style={{
-                        border: selected
-                          ? '1px solid black'
-                          : '1px solid transparent',
-                        opacity: available ? 1 : 0.3,
-                      }}
+                      aria-pressed={selected}
                       disabled={!exists}
                       onClick={() => {
                         if (!selected) {
@@ -89,29 +101,36 @@ export function ProductForm({productOptions, selectedVariant}) {
                 }
               })}
             </div>
-            <br />
           </div>
         );
       })}
-      <AddToCartButton
-        disabled={!selectedVariant || !selectedVariant.availableForSale}
-        onClick={() => {
-          open('cart');
-        }}
-        lines={
-          selectedVariant
-            ? [
-                {
-                  merchandiseId: selectedVariant.id,
-                  quantity: 1,
-                  selectedVariant,
-                },
-              ]
-            : []
-        }
-      >
-        {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
-      </AddToCartButton>
+
+      <div className="jv-atc">
+        <AddToCartButton
+          disabled={!selectedVariant || !selectedVariant.availableForSale}
+          onClick={() => {
+            open('cart');
+          }}
+          lines={
+            selectedVariant
+              ? [
+                  {
+                    merchandiseId: selectedVariant.id,
+                    quantity: 1,
+                    selectedVariant,
+                  },
+                ]
+              : []
+          }
+        >
+          {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
+        </AddToCartButton>
+      </div>
+
+      <p className="mt-4 text-xs leading-relaxed text-steel">
+        Ships from Riverside, California. Small runs — once a size is gone it
+        does not come back.
+      </p>
     </div>
   );
 }
@@ -129,15 +148,17 @@ function ProductOptionSwatch({swatch, name}) {
   if (!image && !color) return name;
 
   return (
-    <div
+    <span
       aria-label={name}
-      className="product-option-label-swatch"
+      className="block h-5 w-5 overflow-hidden"
       style={{
         backgroundColor: color || 'transparent',
       }}
     >
-      {!!image && <img src={image} alt={name} />}
-    </div>
+      {!!image && (
+        <img src={image} alt={name} className="h-full w-full object-cover" />
+      )}
+    </span>
   );
 }
 

@@ -1,3 +1,8 @@
+/* Wrapped in @layer base so Tailwind utilities can override these element
+   defaults. Unlayered author rules outrank every cascade layer, so without
+   this the starter's h1/p/section/a rules silently beat text-*, py-*, and
+   leading-* utilities everywhere on the site. */
+@layer base {
 body {
   font-family:
     system-ui,
@@ -82,11 +87,11 @@ body > main {
   margin: 0 1rem 1rem 1rem;
 }
 
+/* The starter padded every <section> by default. This site is full-bleed and
+   sets its own vertical rhythm per section, so the default only ever fought
+   the layout (most visibly as a 1rem inset inside full-height heroes). */
 section {
-  padding: 1rem 0;
-  @media (min-width: 768px) {
-    padding: 2rem 0;
-  }
+  padding: 0;
 }
 
 fieldset {
@@ -136,4 +141,5 @@ code {
   border-radius: 4px;
   font-family: monospace;
   padding: 0.25rem;
+}
 }

@@ -1,0 +1,556 @@
+/* ============================================================
+   JV GOLD — Customer account
+   Quiet, editorial, confident. Stone ground, onyx ink,
+   gold reserved for state and primary action.
+   ============================================================ */
+
+.acct {
+  --acct-hair: color-mix(in srgb, var(--onyx) 14%, transparent);
+  --acct-hair-strong: color-mix(in srgb, var(--onyx) 28%, transparent);
+  --acct-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  background: var(--stone);
+  color: var(--onyx);
+  min-height: 70vh;
+}
+
+.acct-shell {
+  margin-inline: auto;
+  max-width: 1440px;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 768px) {
+  .acct-shell {
+    padding-inline: 2.5rem;
+  }
+}
+
+/* ---------- masthead ---------- */
+.acct-masthead {
+  padding-top: 7rem;
+  padding-bottom: 2.5rem;
+}
+@media (min-width: 768px) {
+  .acct-masthead {
+    padding-top: 9rem;
+    padding-bottom: 3.5rem;
+  }
+}
+.acct-eyebrow {
+  color: var(--gold-deep);
+  display: block;
+  margin-bottom: 1.25rem;
+}
+.acct-title {
+  font-size: clamp(2.75rem, 9vw, 6.5rem);
+  margin: 0;
+}
+.acct-title em {
+  color: var(--steel);
+  font-style: normal;
+}
+
+/* ---------- nav ---------- */
+.acct-nav {
+  border-top: 1px solid var(--acct-hair);
+  border-bottom: 1px solid var(--acct-hair);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+}
+.acct-nav-link,
+.acct-signout {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--steel);
+  background: none;
+  border: 0;
+  padding: 1.25rem 1.75rem 1.25rem 0;
+  margin-right: 0.75rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.6s var(--acct-ease);
+}
+.acct-nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 1.75rem;
+  bottom: -1px;
+  height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s var(--acct-ease);
+}
+.acct-nav-link:hover,
+.acct-signout:hover {
+  color: var(--onyx);
+}
+.acct-nav-link:hover::after,
+.acct-nav-link[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.acct-nav-link[aria-current='page'] {
+  color: var(--onyx);
+}
+.acct-nav-link.is-pending {
+  opacity: 0.5;
+}
+.acct-signout-form {
+  margin-left: auto;
+  display: flex;
+}
+.acct-signout {
+  padding-right: 0;
+  margin-right: 0;
+}
+
+/* ---------- body ---------- */
+.acct-body {
+  padding-top: 3.5rem;
+  padding-bottom: 6rem;
+}
+@media (min-width: 768px) {
+  .acct-body {
+    padding-top: 5rem;
+    padding-bottom: 8rem;
+  }
+}
+
+.acct-section-title {
+  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  margin: 0 0 0.75rem;
+}
+.acct-lede {
+  color: var(--steel);
+  max-width: 46ch;
+  line-height: 1.7;
+}
+
+/* ---------- forms ---------- */
+.acct-form {
+  max-width: 44rem;
+}
+.acct-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.75rem 2rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .acct-fieldset-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .acct-field-wide {
+    grid-column: 1 / -1;
+  }
+}
+.acct-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.acct-label {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.acct-input {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--acct-hair-strong);
+  border-radius: 0;
+  color: var(--onyx);
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.625rem 0;
+  transition:
+    border-color 0.6s var(--acct-ease),
+    color 0.6s var(--acct-ease);
+}
+.acct-input::placeholder {
+  color: color-mix(in srgb, var(--steel) 55%, transparent);
+}
+.acct-input:hover {
+  border-bottom-color: var(--onyx);
+}
+.acct-input:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+}
+.acct-input:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.acct-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.acct-check input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--gold-deep);
+}
+.acct-check label {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.acct-error {
+  border-left: 2px solid var(--gold-deep);
+  padding: 0.5rem 0 0.5rem 1rem;
+  color: var(--onyx);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ---------- buttons ---------- */
+.acct-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+}
+.acct-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.95rem 2rem;
+  border: 1px solid var(--onyx);
+  background: transparent;
+  color: var(--onyx);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.6s var(--acct-ease),
+    color 0.6s var(--acct-ease),
+    border-color 0.6s var(--acct-ease),
+    opacity 0.4s var(--acct-ease);
+}
+.acct-btn:hover {
+  background: var(--onyx);
+  color: var(--stone);
+}
+.acct-btn:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 3px;
+}
+.acct-btn-primary {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--onyx-deep);
+}
+.acct-btn-primary:hover {
+  background: var(--onyx);
+  border-color: var(--onyx);
+  color: var(--gold);
+}
+.acct-btn-quiet {
+  border-color: var(--acct-hair-strong);
+  color: var(--steel);
+}
+.acct-btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.acct-link {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--onyx);
+  text-decoration: none;
+  border-bottom: 1px solid var(--gold);
+  padding-bottom: 2px;
+  transition: color 0.6s var(--acct-ease);
+}
+.acct-link:hover {
+  color: var(--gold-deep);
+}
+
+/* ---------- search bar ---------- */
+.acct-search {
+  border-bottom: 1px solid var(--acct-hair);
+  padding-bottom: 2rem;
+  margin-bottom: 3rem;
+}
+.acct-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.5rem;
+}
+.acct-search-row .acct-field {
+  flex: 1 1 12rem;
+}
+
+/* ---------- orders table ---------- */
+.acct-table-head {
+  display: none;
+}
+@media (min-width: 768px) {
+  .acct-table-head {
+    display: grid;
+    grid-template-columns: 6rem 1fr 10rem 9rem 8rem;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--acct-hair-strong);
+    padding-bottom: 0.75rem;
+  }
+}
+.acct-th {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.acct-th-right,
+.acct-td-right {
+  text-align: right;
+}
+
+.acct-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem 1.5rem;
+  align-items: center;
+  border-bottom: 1px solid var(--acct-hair);
+  padding: 1.5rem 0;
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.6s var(--acct-ease);
+}
+@media (min-width: 768px) {
+  .acct-row {
+    grid-template-columns: 6rem 1fr 10rem 9rem 8rem;
+    padding: 1.75rem 0;
+  }
+}
+.acct-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s var(--acct-ease);
+}
+.acct-row:hover::after,
+.acct-row:focus-visible::after {
+  transform: scaleX(1);
+}
+.acct-row:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 4px;
+}
+.acct-row-num {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  font-size: 1.125rem;
+}
+.acct-row-meta {
+  font-size: 0.875rem;
+  color: var(--steel);
+  font-variant-numeric: tabular-nums;
+}
+.acct-row-total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.acct-row-cta {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--steel);
+  transition: color 0.6s var(--acct-ease);
+}
+.acct-row:hover .acct-row-cta {
+  color: var(--gold-deep);
+}
+
+.acct-status {
+  display: inline-block;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--steel);
+  border: 1px solid var(--acct-hair-strong);
+  padding: 0.3rem 0.7rem;
+}
+
+/* ---------- empty state ---------- */
+.acct-empty {
+  border-top: 1px solid var(--acct-hair);
+  padding: 4rem 0;
+  max-width: 40rem;
+}
+
+/* ---------- order detail ---------- */
+.acct-lines {
+  border-top: 1px solid var(--acct-hair-strong);
+}
+.acct-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  border-bottom: 1px solid var(--acct-hair);
+  padding: 1.5rem 0;
+}
+@media (min-width: 768px) {
+  .acct-line {
+    grid-template-columns: 1fr 7rem 5rem 7rem;
+  }
+}
+.acct-line-product {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.acct-line-img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--onyx) 6%, transparent);
+}
+.acct-line-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.acct-line-title {
+  font-weight: 600;
+  line-height: 1.3;
+}
+.acct-line-variant {
+  font-size: 0.8125rem;
+  color: var(--steel);
+}
+
+.acct-totals {
+  margin-left: auto;
+  width: 100%;
+  max-width: 22rem;
+  margin-top: 2rem;
+}
+.acct-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 0.6rem 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--steel);
+}
+.acct-total-row dt {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.acct-total-grand {
+  border-top: 1px solid var(--acct-hair-strong);
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  color: var(--onyx);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.acct-panels {
+  display: grid;
+  gap: 3rem;
+  margin-top: 4rem;
+  border-top: 1px solid var(--acct-hair);
+  padding-top: 3rem;
+}
+@media (min-width: 768px) {
+  .acct-panels {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.acct-panel-label {
+  color: var(--gold-deep);
+  display: block;
+  margin-bottom: 1rem;
+}
+.acct-panel address {
+  font-style: normal;
+  line-height: 1.7;
+  color: var(--steel);
+}
+
+/* ---------- address cards ---------- */
+.acct-address-list {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--acct-hair-strong);
+}
+.acct-address {
+  border-bottom: 1px solid var(--acct-hair);
+  padding: 2.5rem 0;
+}
+.acct-address-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.acct-badge {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.5625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  border: 1px solid var(--gold);
+  padding: 0.25rem 0.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acct *,
+  .acct *::after,
+  .acct *::before {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  .acct-row::after,
+  .acct-nav-link::after {
+    transition: none;
+  }
+}

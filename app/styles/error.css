@@ -1,0 +1,106 @@
+/* Branded error / 404 treatment. Owned by the error-page work. */
+
+.err-stage {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #111;
+}
+
+/* Slow, barely-there drift on the backing photograph. */
+.err-plate {
+  position: absolute;
+  inset: -6%;
+  transform: scale(1.06);
+  animation: err-drift 24s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+  will-change: transform;
+}
+
+@keyframes err-drift {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-1.5%, -2%, 0);
+  }
+}
+
+/* Layered veils: a deep vignette plus a warm floor so gold type stays legible. */
+.err-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to right,
+      rgba(17, 17, 17, 0.94) 0%,
+      rgba(17, 17, 17, 0.72) 42%,
+      rgba(17, 17, 17, 0.4) 100%
+    ),
+    linear-gradient(
+      to top,
+      rgba(17, 17, 17, 0.96) 0%,
+      rgba(17, 17, 17, 0.15) 55%
+    );
+}
+
+.err-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image: radial-gradient(
+    rgba(200, 162, 91, 0.09) 1px,
+    transparent 1px
+  );
+  background-size: 3px 3px;
+}
+
+/* Oversized ghost numerals sitting behind the headline. */
+.err-code {
+  position: absolute;
+  right: -0.06em;
+  bottom: -0.22em;
+  margin: 0;
+  font-size: clamp(11rem, 34vw, 30rem);
+  line-height: 0.72;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(200, 162, 91, 0.26);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Understated gold underline that draws itself in on hover/focus. */
+.err-link {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.35rem;
+}
+
+.err-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: #c8a25b;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.err-link:hover::after,
+.err-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .err-plate {
+    animation: none;
+    transform: scale(1.06);
+  }
+
+  .err-link::after {
+    transition: none;
+  }
+}

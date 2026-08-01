@@ -29,6 +29,8 @@ ${generalDisallowRules({sitemapUrl})}
 User-agent: adsbot-google
 Disallow: /cart
 Disallow: /account
+Disallow: /private
+Disallow: /private/*
 Disallow: /search
 Allow: /search/
 Disallow: /search/?*
@@ -60,6 +62,8 @@ Crawl-delay: 1
 function generalDisallowRules({sitemapUrl}) {
   return `Disallow: /cart
 Disallow: /account
+Disallow: /private
+Disallow: /private/*
 Disallow: /collections/*sort_by*
 Disallow: /*/collections/*sort_by*
 Disallow: /collections/*+*

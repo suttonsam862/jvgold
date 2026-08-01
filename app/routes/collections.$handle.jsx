@@ -1,14 +1,19 @@
-import {redirect, useLoaderData} from 'react-router';
+import {redirect, useLoaderData, Link} from 'react-router';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import {ProductItem} from '~/components/ProductItem';
+import styles from '~/styles/commerce.css?url';
+
+export function links() {
+  return [{rel: 'stylesheet', href: styles}];
+}
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
-  return [{title: `Hydrogen | ${data?.collection.title ?? ''} Collection`}];
+  return [{title: `${data?.collection.title ?? 'Collection'} — JV GOLD`}];
 };
 
 /**
@@ -76,21 +81,56 @@ export default function Collection() {
   const {collection} = useLoaderData();
 
   return (
-    <div className="collection">
-      <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
+    <section className="mx-auto max-w-[1440px] px-5 pt-16 pb-28 md:px-10 md:pt-24 md:pb-36">
+      <div className="mb-16 grid gap-8 border-b rule pb-10 md:mb-24 md:grid-cols-[1.1fr_0.9fr] md:items-end md:gap-16">
+        <div>
+          <Link
+            to="/collections"
+            prefetch="intent"
+            className="tag text-steel transition-colors duration-500 hover:text-gold-deep"
+          >
+            THE SHOP
+          </Link>
+          <h1 className="display mt-4 text-[clamp(2.4rem,7vw,5.5rem)]">
+            {collection.title}
+          </h1>
+        </div>
+        {collection.description ? (
+          <p className="max-w-md leading-relaxed text-onyx/70 md:justify-self-end">
+            {collection.description}
+          </p>
+        ) : null}
+      </div>
+
       <PaginatedResourceSection
         connection={collection.products}
-        resourcesClassName="products-grid"
+        ariaLabel={`${collection.title} products`}
+        resourcesClassName="grid grid-cols-2 gap-x-6 gap-y-14 md:gap-x-10 md:gap-y-20 lg:grid-cols-3 lg:gap-x-12"
       >
         {({node: product, index}) => (
           <ProductItem
             key={product.id}
             product={product}
+            index={index}
             loading={index < 8 ? 'eager' : undefined}
           />
         )}
       </PaginatedResourceSection>
+
+      {collection.products?.nodes?.length === 0 ? (
+        <p className="max-w-lg text-lg leading-relaxed text-onyx/70">
+          Nothing is hanging in this collection right now. The next run is
+          already being cut &mdash; check the{' '}
+          <Link
+            to="/collections/all"
+            prefetch="intent"
+            className="text-gold-deep underline underline-offset-4"
+          >
+            full catalogue
+          </Link>{' '}
+          in the meantime.
+        </p>
+      ) : null}
       <Analytics.CollectionView
         data={{
           collection: {
@@ -99,7 +139,7 @@ export default function Collection() {
           },
         }}
       />
-    </div>
+    </section>
   );
 }
 

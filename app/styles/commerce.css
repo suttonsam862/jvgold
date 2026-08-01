@@ -1,0 +1,118 @@
+/* ------------------------------------------------------------------
+   COMMERCE — JV GOLD storefront surfaces.
+   Only holds rules that need descendant selectors (Hydrogen renders the
+   markup) or long-form rich text. Everything else is Tailwind in the JSX.
+   Attached from the commerce routes via their links() export.
+   ------------------------------------------------------------------ */
+
+/* ---------- add-to-cart -----------------------------------------
+   <AddToCartButton> renders its own <button> inside a <CartForm>, so
+   the only way to reach it is a descendant selector. */
+.jv-atc form {
+  width: 100%;
+}
+
+.jv-atc button {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--onyx);
+  background: var(--onyx);
+  color: var(--stone);
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 1.15rem 1.5rem;
+  cursor: pointer;
+  transition:
+    background-color 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.jv-atc button:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--onyx-deep);
+}
+
+.jv-atc button:disabled {
+  cursor: not-allowed;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--onyx) 20%, transparent);
+  color: var(--steel);
+}
+
+.jv-atc button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* ---------- product description rich text ---------------------- */
+.jv-rte {
+  line-height: 1.8;
+  color: color-mix(in srgb, var(--onyx) 74%, transparent);
+  font-size: 0.9375rem;
+}
+
+.jv-rte > * + * {
+  margin-top: 1.15em;
+}
+
+.jv-rte p {
+  max-width: 62ch;
+}
+
+.jv-rte strong,
+.jv-rte b {
+  color: var(--onyx);
+  font-weight: 600;
+}
+
+.jv-rte a {
+  color: var(--gold-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.jv-rte ul,
+.jv-rte ol {
+  padding-left: 1.2rem;
+  max-width: 62ch;
+}
+
+.jv-rte ul {
+  list-style: disc;
+}
+
+.jv-rte ol {
+  list-style: decimal;
+}
+
+.jv-rte li + li {
+  margin-top: 0.4em;
+}
+
+.jv-rte h2,
+.jv-rte h3,
+.jv-rte h4 {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--onyx);
+  font-size: 0.9375rem;
+  margin-top: 2.2em;
+}
+
+.jv-rte img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jv-atc button {
+    transition: none;
+  }
+}

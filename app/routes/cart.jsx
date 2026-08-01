@@ -1,12 +1,17 @@
-import {useLoaderData, data} from 'react-router';
+import {useLoaderData, data, Link} from 'react-router';
 import {CartForm} from '@shopify/hydrogen';
 import {CartMain} from '~/components/CartMain';
+import styles from '~/styles/commerce.css?url';
+
+export function links() {
+  return [{rel: 'stylesheet', href: styles}];
+}
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Cart`}];
+  return [{title: `Bag — JV GOLD`}];
 };
 
 /**
@@ -112,10 +117,25 @@ export default function Cart() {
   const cart = useLoaderData();
 
   return (
-    <div className="cart">
-      <h1>Cart</h1>
+    <section className="mx-auto max-w-[1440px] px-5 pt-16 pb-28 md:px-10 md:pt-24 md:pb-36">
+      <div className="mb-14 flex flex-wrap items-end justify-between gap-6 border-b rule pb-8 md:mb-20">
+        <div>
+          <p className="tag text-gold-deep">YOUR ORDER</p>
+          <h1 className="display mt-4 text-[clamp(2.6rem,7vw,5.5rem)]">
+            The b<span className="text-gold-deep">a</span>g
+          </h1>
+        </div>
+        <Link
+          to="/collections"
+          prefetch="intent"
+          className="text-[0.7rem] uppercase tracking-[0.18em] text-steel underline underline-offset-4 transition-colors duration-500 hover:text-onyx"
+        >
+          Keep shopping
+        </Link>
+      </div>
+
       <CartMain layout="page" cart={cart} />
-    </div>
+    </section>
   );
 }
 

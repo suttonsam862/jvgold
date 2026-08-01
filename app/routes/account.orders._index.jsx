@@ -60,6 +60,12 @@ export default function Orders() {
 
   return (
     <div className="orders">
+      <header data-reveal>
+        <h2 className="display acct-section-title">Orders</h2>
+        <p className="acct-lede">
+          Every order you have placed, newest first.
+        </p>
+      </header>
       <OrderSearchForm currentFilters={filters} />
       <OrdersTable orders={orders} filters={filters} />
     </div>
@@ -78,9 +84,18 @@ function OrdersTable({orders, filters}) {
   return (
     <div className="acccount-orders" aria-live="polite">
       {orders?.nodes.length ? (
-        <PaginatedResourceSection connection={orders}>
-          {({node: order}) => <OrderItem key={order.id} order={order} />}
-        </PaginatedResourceSection>
+        <>
+          <div className="acct-table-head" aria-hidden="true">
+            <span className="acct-th">Order</span>
+            <span className="acct-th">Placed</span>
+            <span className="acct-th">Status</span>
+            <span className="acct-th acct-th-right">Total</span>
+            <span className="acct-th acct-th-right">&nbsp;</span>
+          </div>
+          <PaginatedResourceSection connection={orders}>
+            {({node: order}) => <OrderItem key={order.id} order={order} />}
+          </PaginatedResourceSection>
+        </>
       ) : (
         <EmptyOrders hasFilters={hasFilters} />
       )}
@@ -93,22 +108,26 @@ function OrdersTable({orders, filters}) {
  */
 function EmptyOrders({hasFilters = false}) {
   return (
-    <div>
+    <div className="acct-empty" data-reveal>
       {hasFilters ? (
         <>
-          <p>No orders found matching your search.</p>
-          <br />
-          <p>
-            <Link to="/account/orders">Clear filters →</Link>
-          </p>
+          <p className="acct-lede">No orders match that search.</p>
+          <div className="acct-actions">
+            <Link className="acct-btn" to="/account/orders">
+              Clear filters
+            </Link>
+          </div>
         </>
       ) : (
         <>
-          <p>You haven&apos;t placed any orders yet.</p>
-          <br />
-          <p>
-            <Link to="/collections">Start Shopping →</Link>
+          <p className="acct-lede">
+            No orders yet. When you place one, it will live here.
           </p>
+          <div className="acct-actions">
+            <Link className="acct-btn acct-btn-primary" to="/collections">
+              Start shopping
+            </Link>
+          </div>
         </>
       )}
     </div>
@@ -152,37 +171,45 @@ function OrderSearchForm({currentFilters}) {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className="order-search-form"
+      className="order-search-form acct-search"
       aria-label="Search orders"
+      style={{marginTop: '3rem'}}
+      data-reveal
     >
-      <fieldset className="order-search-fieldset">
-        <legend className="order-search-legend">Filter Orders</legend>
-
-        <div className="order-search-inputs">
+      <div className="acct-search-row">
+        <div className="acct-field">
+          <label className="acct-label" htmlFor="order-search-name">
+            Order number
+          </label>
           <input
+            id="order-search-name"
             type="search"
             name={ORDER_FILTER_FIELDS.NAME}
-            placeholder="Order #"
-            aria-label="Order number"
+            placeholder="1001"
             defaultValue={currentFilters.name || ''}
-            className="order-search-input"
-          />
-          <input
-            type="search"
-            name={ORDER_FILTER_FIELDS.CONFIRMATION_NUMBER}
-            placeholder="Confirmation #"
-            aria-label="Confirmation number"
-            defaultValue={currentFilters.confirmationNumber || ''}
-            className="order-search-input"
+            className="acct-input"
           />
         </div>
-
-        <div className="order-search-buttons">
-          <button type="submit" disabled={isSearching}>
+        <div className="acct-field">
+          <label className="acct-label" htmlFor="order-search-confirmation">
+            Confirmation number
+          </label>
+          <input
+            id="order-search-confirmation"
+            type="search"
+            name={ORDER_FILTER_FIELDS.CONFIRMATION_NUMBER}
+            placeholder="ABC123"
+            defaultValue={currentFilters.confirmationNumber || ''}
+            className="acct-input"
+          />
+        </div>
+        <div className="acct-actions" style={{marginTop: 0}}>
+          <button className="acct-btn" type="submit" disabled={isSearching}>
             {isSearching ? 'Searching' : 'Search'}
           </button>
           {hasFilters && (
             <button
+              className="acct-btn acct-btn-quiet"
               type="button"
               disabled={isSearching}
               onClick={() => {
@@ -194,7 +221,7 @@ function OrderSearchForm({currentFilters}) {
             </button>
           )}
         </div>
-      </fieldset>
+      </div>
     </form>
   );
 }
@@ -205,22 +232,31 @@ function OrderSearchForm({currentFilters}) {
 function OrderItem({order}) {
   const fulfillmentStatus = flattenConnection(order.fulfillments)[0]?.status;
   return (
-    <>
-      <fieldset>
-        <Link to={`/account/orders/${btoa(order.id)}`}>
-          <strong>#{order.number}</strong>
-        </Link>
-        <p>{new Date(order.processedAt).toDateString()}</p>
-        {order.confirmationNumber && (
-          <p>Confirmation: {order.confirmationNumber}</p>
-        )}
-        <p>{order.financialStatus}</p>
-        {fulfillmentStatus && <p>{fulfillmentStatus}</p>}
+    <Link
+      className="acct-row"
+      to={`/account/orders/${btoa(order.id)}`}
+      aria-label={`View order ${order.number}`}
+      data-reveal
+    >
+      <span className="acct-row-num">#{order.number}</span>
+      <span className="acct-row-meta">
+        {new Date(order.processedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })}
+        {order.confirmationNumber ? ` · ${order.confirmationNumber}` : ''}
+      </span>
+      <span>
+        <span className="acct-status">
+          {fulfillmentStatus || order.financialStatus}
+        </span>
+      </span>
+      <span className="acct-row-total acct-td-right">
         <Money data={order.totalPrice} />
-        <Link to={`/account/orders/${btoa(order.id)}`}>View Order →</Link>
-      </fieldset>
-      <br />
-    </>
+      </span>
+      <span className="acct-row-cta acct-td-right">View</span>
+    </Link>
   );
 }
 

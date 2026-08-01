@@ -1,4 +1,4 @@
-import {redirect, useLoaderData} from 'react-router';
+import {Link, redirect, useLoaderData} from 'react-router';
 import {Money, Image} from '@shopify/hydrogen';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
 
@@ -74,113 +74,113 @@ export default function OrderRoute() {
   } = useLoaderData();
   return (
     <div className="account-order">
-      <h2>Order {order.name}</h2>
-      <p>Placed on {new Date(order.processedAt).toDateString()}</p>
-      {order.confirmationNumber && (
-        <p>Confirmation: {order.confirmationNumber}</p>
-      )}
-      <br />
-      <div>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Product</th>
-              <th scope="col">Price</th>
-              <th scope="col">Quantity</th>
-              <th scope="col">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lineItems.map((lineItem, lineItemIndex) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <OrderLineRow key={lineItemIndex} lineItem={lineItem} />
-            ))}
-          </tbody>
-          <tfoot>
-            {((discountValue && discountValue.amount) ||
-              discountPercentage) && (
-              <tr>
-                <th scope="row" colSpan={3}>
-                  <p>Discounts</p>
-                </th>
-                <th scope="row">
-                  <p>Discounts</p>
-                </th>
-                <td>
-                  {discountPercentage ? (
-                    <span>-{discountPercentage}% OFF</span>
-                  ) : (
-                    discountValue && <Money data={discountValue} />
-                  )}
-                </td>
-              </tr>
-            )}
-            <tr>
-              <th scope="row" colSpan={3}>
-                <p>Subtotal</p>
-              </th>
-              <th scope="row">
-                <p>Subtotal</p>
-              </th>
-              <td>
-                <Money data={order.subtotal} />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" colSpan={3}>
-                Tax
-              </th>
-              <th scope="row">
-                <p>Tax</p>
-              </th>
-              <td>
-                <Money data={order.totalTax} />
-              </td>
-            </tr>
-            <tr>
-              <th scope="row" colSpan={3}>
-                Total
-              </th>
-              <th scope="row">
-                <p>Total</p>
-              </th>
-              <td>
-                <Money data={order.totalPrice} />
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-        <div>
-          <h3>Shipping Address</h3>
-          {order?.shippingAddress ? (
-            <address>
-              <p>{order.shippingAddress.name}</p>
-              {order.shippingAddress.formatted ? (
-                <p>{order.shippingAddress.formatted}</p>
-              ) : (
-                ''
-              )}
-              {order.shippingAddress.formattedArea ? (
-                <p>{order.shippingAddress.formattedArea}</p>
-              ) : (
-                ''
-              )}
-            </address>
-          ) : (
-            <p>No shipping address defined</p>
+      <header data-reveal>
+        <Link className="acct-link" to="/account/orders">
+          ← All orders
+        </Link>
+        <h2 className="display acct-section-title" style={{marginTop: '2rem'}}>
+          Order {order.name}
+        </h2>
+        <p className="acct-lede tabular">
+          Placed{' '}
+          {new Date(order.processedAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+          {order.confirmationNumber
+            ? ` · Confirmation ${order.confirmationNumber}`
+            : ''}
+        </p>
+      </header>
+
+      <div style={{marginTop: '3.5rem'}} data-reveal>
+        <div className="acct-table-head" aria-hidden="true">
+          <span className="acct-th">Item</span>
+          <span className="acct-th acct-th-right">Price</span>
+          <span className="acct-th acct-th-right">Qty</span>
+          <span className="acct-th acct-th-right">Total</span>
+        </div>
+        <div className="acct-lines">
+          {lineItems.map((lineItem, lineItemIndex) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <OrderLineRow key={lineItemIndex} lineItem={lineItem} />
+          ))}
+        </div>
+
+        <dl className="acct-totals">
+          {(discountValue?.amount || discountPercentage) && (
+            <div className="acct-total-row">
+              <dt>Discounts</dt>
+              <dd>
+                {discountPercentage ? (
+                  <span>-{discountPercentage}% off</span>
+                ) : (
+                  discountValue && <Money data={discountValue} />
+                )}
+              </dd>
+            </div>
           )}
-          <h3>Status</h3>
-          <div>
-            <p>{fulfillmentStatus}</p>
+          <div className="acct-total-row">
+            <dt>Subtotal</dt>
+            <dd>
+              <Money data={order.subtotal} />
+            </dd>
+          </div>
+          <div className="acct-total-row">
+            <dt>Tax</dt>
+            <dd>
+              <Money data={order.totalTax} />
+            </dd>
+          </div>
+          <div className="acct-total-row acct-total-grand">
+            <dt>Total</dt>
+            <dd>
+              <Money data={order.totalPrice} />
+            </dd>
+          </div>
+        </dl>
+
+        <div className="acct-panels" data-reveal>
+          <div className="acct-panel">
+            <span className="tag acct-panel-label">Shipping</span>
+            {order?.shippingAddress ? (
+              <address>
+                {order.shippingAddress.name}
+                {order.shippingAddress.formatted ? (
+                  <>
+                    <br />
+                    {order.shippingAddress.formatted}
+                  </>
+                ) : null}
+                {order.shippingAddress.formattedArea ? (
+                  <>
+                    <br />
+                    {order.shippingAddress.formattedArea}
+                  </>
+                ) : null}
+              </address>
+            ) : (
+              <p className="acct-lede">No shipping address on file.</p>
+            )}
+          </div>
+          <div className="acct-panel">
+            <span className="tag acct-panel-label">Status</span>
+            <span className="acct-status">{fulfillmentStatus}</span>
+          </div>
+          <div className="acct-panel">
+            <span className="tag acct-panel-label">Tracking</span>
+            <a
+              className="acct-link"
+              target="_blank"
+              href={order.statusPageUrl}
+              rel="noreferrer"
+            >
+              View order status ↗
+            </a>
           </div>
         </div>
       </div>
-      <br />
-      <p>
-        <a target="_blank" href={order.statusPageUrl} rel="noreferrer">
-          View Order Status →
-        </a>
-      </p>
     </div>
   );
 }
@@ -190,28 +190,34 @@ export default function OrderRoute() {
  */
 function OrderLineRow({lineItem}) {
   return (
-    <tr key={lineItem.id}>
-      <td>
-        <div>
-          {lineItem?.image && (
-            <div>
-              <Image data={lineItem.image} width={96} height={96} />
-            </div>
-          )}
-          <div>
-            <p>{lineItem.title}</p>
-            <small>{lineItem.variantTitle}</small>
+    <div className="acct-line">
+      <div className="acct-line-product">
+        {lineItem?.image && (
+          <div className="acct-line-img">
+            <Image
+              data={lineItem.image}
+              width={96}
+              height={96}
+              alt={lineItem.title}
+              className="img-mono"
+            />
           </div>
+        )}
+        <div>
+          <p className="acct-line-title">{lineItem.title}</p>
+          {lineItem.variantTitle && (
+            <p className="acct-line-variant">{lineItem.variantTitle}</p>
+          )}
         </div>
-      </td>
-      <td>
+      </div>
+      <div className="acct-row-meta acct-td-right">
         <Money data={lineItem.price} />
-      </td>
-      <td>{lineItem.quantity}</td>
-      <td>
+      </div>
+      <div className="acct-row-meta acct-td-right">×{lineItem.quantity}</div>
+      <div className="acct-row-total acct-td-right">
         <Money data={lineItem.totalDiscount} />
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 

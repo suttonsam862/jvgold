@@ -3,12 +3,17 @@ import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {SearchForm} from '~/components/SearchForm';
 import {SearchResults} from '~/components/SearchResults';
 import {getEmptyPredictiveSearchResult} from '~/lib/search';
+import styles from '~/styles/commerce.css?url';
+
+export function links() {
+  return [{rel: 'stylesheet', href: styles}];
+}
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Search`}];
+  return [{title: `Search — JV GOLD`}];
 };
 
 /**
@@ -38,39 +43,80 @@ export default function SearchPage() {
   if (type === 'predictive') return null;
 
   return (
-    <div className="search">
-      <h1>Search</h1>
-      <SearchForm>
+    <section className="mx-auto max-w-[1440px] px-5 pt-16 pb-28 md:px-10 md:pt-24 md:pb-36">
+      <p className="tag text-gold-deep">FIND IT</p>
+      <h1 className="display mt-4 text-[clamp(2.6rem,7.5vw,6rem)]">
+        S<span className="text-gold-deep">e</span>arch
+      </h1>
+
+      <SearchForm className="mt-10 flex max-w-2xl items-end gap-5 border-b rule pb-4 md:mt-14">
         {({inputRef}) => (
           <>
+            <label htmlFor="search-term" className="sr-only">
+              Search the site
+            </label>
             <input
+              id="search-term"
               defaultValue={term}
               name="q"
-              placeholder="Search…"
+              placeholder="Singlets, camps, journal…"
               ref={inputRef}
               type="search"
+              className="min-w-0 flex-1 bg-transparent font-display text-[clamp(1.1rem,2.4vw,1.6rem)] tracking-tight text-onyx placeholder:font-sans placeholder:text-base placeholder:tracking-normal placeholder:text-steel focus:outline-none"
             />
-            &nbsp;
-            <button type="submit">Search</button>
+            <button
+              type="submit"
+              className="shrink-0 font-display text-[0.7rem] font-bold uppercase tracking-[0.18em] text-onyx transition-colors duration-500 hover:text-gold-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              Search
+            </button>
           </>
         )}
       </SearchForm>
-      {error && <p style={{color: 'red'}}>{error}</p>}
-      {!term || !result?.total ? (
-        <SearchResults.Empty />
-      ) : (
-        <SearchResults result={result} term={term}>
-          {({articles, pages, products, term}) => (
-            <div>
-              <SearchResults.Products products={products} term={term} />
-              <SearchResults.Pages pages={pages} term={term} />
-              <SearchResults.Articles articles={articles} term={term} />
-            </div>
-          )}
-        </SearchResults>
-      )}
+
+      {term ? (
+        <p className="mt-5 text-[0.7rem] uppercase tracking-[0.18em] text-steel">
+          {result?.total ?? 0} result{result?.total === 1 ? '' : 's'} for
+          &ldquo;{term}&rdquo;
+        </p>
+      ) : null}
+
+      {error ? (
+        <p
+          role="alert"
+          className="mt-6 max-w-xl text-sm leading-relaxed text-onyx"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-16 md:mt-20">
+        {!term ? (
+          <p className="max-w-xl text-lg leading-relaxed text-onyx/70">
+            Type a word and the whole site answers &mdash; the shop, the
+            journal, every page. Press{' '}
+            <kbd className="font-display text-[0.8em] tracking-[0.12em] text-onyx">
+              &#8984;K
+            </kbd>{' '}
+            from anywhere to jump straight back here.
+          </p>
+        ) : !result?.total ? (
+          <SearchResults.Empty />
+        ) : (
+          <SearchResults result={result} term={term}>
+            {({articles, pages, products, term}) => (
+              <div>
+                <SearchResults.Products products={products} term={term} />
+                <SearchResults.Pages pages={pages} term={term} />
+                <SearchResults.Articles articles={articles} term={term} />
+              </div>
+            )}
+          </SearchResults>
+        )}
+      </div>
+
       <Analytics.SearchView data={{searchTerm: term, searchResults: result}} />
-    </div>
+    </section>
   );
 }
 

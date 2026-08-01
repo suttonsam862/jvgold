@@ -1,0 +1,1487 @@
+/* ==========================================================================
+   JV GOLD — CLIENT LIST  (/private/clients)
+   ==========================================================================
+
+   Dark-register cockpit sheet. Loaded ONLY by app/routes/private.clients.tsx
+   via a route `links()` export, so none of it costs the public site a byte.
+
+   HOUSE RULES OBSERVED HERE
+   -------------------------
+   - Hairlines, never cards. Nothing on this page has a box-shadow or a
+     radius larger than 2px; separation comes from 1px rules at low alpha.
+   - Gold is a scalpel. It marks exactly one figure per group, the sort column
+     in play, the active saved view, and focus. Everything else is stone/steel.
+   - Tabular numerals on every figure (`.tabular` is global, in jvgold.css).
+   - Slow, expensive easing. 600–900ms on anything that moves, transform and
+     opacity only, and all of it neutralised under prefers-reduced-motion at
+     the bottom of this file.
+   - Designed at 390px first. The table appears at 1024px; below that the same
+     data renders as cards. Nothing scrolls horizontally at any width.
+   ========================================================================== */
+
+.clients-page {
+  min-height: 100svh;
+  /* A single, very slow gold wash in the top-left corner. It reads as light
+     falling into the room rather than as a gradient. */
+  background-image: radial-gradient(
+    120% 60% at 0% 0%,
+    color-mix(in srgb, var(--gold) 5%, transparent) 0%,
+    transparent 62%
+  );
+}
+
+/* --------------------------------------------------------------- HEADER -- */
+
+.clients-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--onyx-deep) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(14px);
+}
+
+.clients-header-inner {
+  margin: 0 auto;
+  display: flex;
+  max-width: 1560px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.clients-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--steel);
+  transition: color 600ms var(--ease-lux);
+}
+
+.clients-back:hover,
+.clients-back:focus-visible {
+  color: var(--gold);
+}
+
+.clients-title {
+  font-size: clamp(1.5rem, 6vw, 2.25rem);
+  line-height: 1;
+}
+
+.clients-subtitle {
+  margin-top: 0.75rem;
+  max-width: 46ch;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--steel);
+}
+
+.clients-logout {
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--stone) 25%, transparent);
+  padding: 0.625rem 1rem;
+  color: var(--steel);
+  transition:
+    color 600ms var(--ease-lux),
+    border-color 600ms var(--ease-lux);
+}
+
+.clients-logout:hover,
+.clients-logout:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.clients-notice {
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+  padding: 0.75rem 1.25rem;
+  text-align: center;
+  font-size: 0.625rem;
+  line-height: 1.6;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.clients-main {
+  margin: 0 auto;
+  max-width: 1560px;
+  padding: 2.5rem 1.25rem 7rem;
+}
+
+@media (min-width: 768px) {
+  .clients-header-inner {
+    align-items: center;
+    padding: 1.25rem 2.5rem;
+  }
+  .clients-main {
+    padding: 3.5rem 2.5rem 9rem;
+  }
+}
+
+/* -------------------------------------------------------------- SUMMARY -- */
+
+.clients-summary {
+  border-top: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  padding: 1.75rem 0;
+}
+
+.clients-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .clients-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .clients-summary-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2rem;
+  }
+}
+
+.clients-summary-cell {
+  min-width: 0;
+}
+
+.clients-summary-value {
+  margin-top: 0.625rem;
+  font-size: clamp(1.5rem, 5vw, 2.125rem);
+  line-height: 1;
+}
+
+.clients-summary-sub {
+  margin-top: 0.5rem;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--steel);
+}
+
+/* Status composition — a 3px hairline bar, not a pie, not a donut. */
+.clients-statusbar-wrap {
+  margin-top: 1.75rem;
+}
+
+.clients-statusbar {
+  display: flex;
+  height: 3px;
+  width: 100%;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--stone) 8%, transparent);
+}
+
+.clients-statusbar-seg {
+  height: 100%;
+  transition: width 900ms var(--ease-lux);
+}
+
+.clients-statusbar-key {
+  margin-top: 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+}
+
+.clients-statusbar-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clients-statusbar-dot {
+  height: 6px;
+  width: 6px;
+  flex: none;
+}
+
+.clients-statusbar-num {
+  color: color-mix(in srgb, var(--stone) 75%, transparent);
+}
+
+/* One palette, used by the bar, its key and the row status pills. */
+.clients-statusbar-seg[data-status='Active'],
+.clients-statusbar-dot[data-status='Active'] {
+  background: color-mix(in srgb, var(--stone) 60%, transparent);
+}
+.clients-statusbar-seg[data-status='Trial'],
+.clients-statusbar-dot[data-status='Trial'] {
+  background: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.clients-statusbar-seg[data-status='Paid In Full'],
+.clients-statusbar-dot[data-status='Paid In Full'] {
+  background: var(--gold);
+}
+.clients-statusbar-seg[data-status='Owes Balance'],
+.clients-statusbar-dot[data-status='Owes Balance'] {
+  background: #b4553f;
+}
+.clients-statusbar-seg[data-status='Inactive'],
+.clients-statusbar-dot[data-status='Inactive'] {
+  background: color-mix(in srgb, var(--steel) 70%, transparent);
+}
+
+/* -------------------------------------------------------------- FILTERS -- */
+
+.clients-filters {
+  margin-top: 2.5rem;
+}
+
+/* Saved views — one-tap presets, horizontally scrollable on a phone. */
+.clients-views {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.clients-views-track {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  /* Bleed to the page edge so the last chip is visibly cut off, which is what
+     tells a thumb there is more to scroll. */
+  margin: 0 -1.25rem;
+  padding: 0 1.25rem 0.25rem;
+  scrollbar-width: none;
+}
+
+.clients-views-track::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .clients-views {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .clients-views-track {
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+.clients-view-chip {
+  flex: none;
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--stone) 16%, transparent);
+  padding: 0.5rem 0.9375rem;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--stone) 80%, transparent);
+  transition:
+    color 600ms var(--ease-lux),
+    border-color 600ms var(--ease-lux),
+    background-color 600ms var(--ease-lux);
+}
+
+.clients-view-chip:hover,
+.clients-view-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  color: var(--gold);
+}
+
+.clients-view-chip[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+}
+
+/* Search + the mobile Filters toggle. */
+.clients-search-row {
+  margin-top: 2rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.clients-search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.clients-input {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  background: transparent;
+  padding: 0.5rem 0;
+  color: var(--stone);
+  transition: border-color 600ms var(--ease-lux);
+}
+
+.clients-input::placeholder {
+  color: color-mix(in srgb, var(--steel) 90%, transparent);
+}
+
+.clients-input:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+}
+
+.clients-input:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.clients-search-input {
+  margin-top: 0.5rem;
+  font-size: 1rem; /* 16px — anything smaller makes iOS zoom on focus. */
+  letter-spacing: 0.01em;
+}
+
+.clients-hint {
+  margin-top: 0.5rem;
+  max-width: 60ch;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--steel);
+}
+
+.clients-facets-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 44px;
+  align-self: flex-end;
+  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  padding: 0.625rem 0.9375rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stone);
+  transition:
+    color 600ms var(--ease-lux),
+    border-color 600ms var(--ease-lux);
+}
+
+.clients-facets-toggle:hover,
+.clients-facets-toggle:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.clients-facets-count {
+  color: var(--gold);
+}
+
+/* Active-filter chips. */
+.clients-chips {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.clients-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--stone);
+  transition:
+    border-color 600ms var(--ease-lux),
+    background-color 600ms var(--ease-lux);
+}
+
+.clients-chip:hover,
+.clients-chip:focus-visible {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+}
+
+.clients-chip-prefix {
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+.clients-chip-x {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.clients-chip-clear {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--stone) 30%, transparent);
+  background: transparent;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  color: var(--steel);
+}
+
+/* The facet panel. Collapsed on phones, always open from lg up — one DOM
+   tree, switched by CSS, so nothing depends on measuring the viewport in JS. */
+.clients-facets {
+  display: grid;
+  gap: 1.75rem;
+  margin-top: 1.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  padding-top: 1.75rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.clients-facets[data-open='false'] {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .clients-facets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .clients-facets,
+  .clients-facets[data-open='false'] {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2rem 2.5rem;
+  }
+  .clients-facets-toggle {
+    display: none;
+  }
+}
+
+.clients-facet {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+
+.clients-facet-list {
+  margin-top: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  /* Long facets (tags, families) cap out and scroll inside themselves rather
+     than pushing the roster off the bottom of a phone screen. */
+  max-height: 15rem;
+  overflow-y: auto;
+  gap: 1px;
+}
+
+.clients-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  cursor: pointer;
+  padding: 0.375rem 0;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--stone) 82%, transparent);
+  transition: color 600ms var(--ease-lux);
+}
+
+.clients-option:hover {
+  color: var(--stone);
+}
+
+.clients-option[data-checked='true'] {
+  color: var(--gold);
+}
+
+/* Options that would return nothing are dimmed, never hidden — a facet that
+   silently loses rows is a facet you stop trusting. */
+.clients-option[data-empty='true'] {
+  opacity: 0.42;
+}
+
+.clients-option-input {
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.clients-option-mark {
+  position: relative;
+  height: 14px;
+  width: 14px;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--stone) 32%, transparent);
+  transition:
+    border-color 600ms var(--ease-lux),
+    background-color 600ms var(--ease-lux);
+}
+
+.clients-option[data-checked='true'] .clients-option-mark {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.clients-option-input:focus-visible + .clients-option-mark {
+  outline: 1px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.clients-option-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clients-option-count {
+  flex: none;
+  font-size: 0.6875rem;
+  color: var(--steel);
+}
+
+/* Range facets. */
+.clients-range {
+  margin-top: 0.875rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.clients-range-label {
+  display: block;
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.clients-range-shell {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.clients-range-prefix {
+  font-size: 0.8125rem;
+  color: var(--steel);
+}
+
+.clients-range-shell .clients-input {
+  font-size: 0.9375rem;
+}
+
+/* Date inputs render a UA calendar glyph that is black-on-black by default. */
+.clients-input::-webkit-calendar-picker-indicator {
+  filter: invert(72%) sepia(18%) saturate(700%) hue-rotate(3deg);
+  cursor: pointer;
+}
+
+.clients-facets-foot {
+  align-self: end;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+/* ------------------------------------------------------------ RESULT BAR -- */
+
+.clients-resultbar {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  padding-bottom: 1rem;
+}
+
+.clients-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+}
+
+.clients-count-figure {
+  font-size: 1.5rem;
+  color: var(--gold);
+}
+
+.clients-count-of {
+  font-size: 0.8125rem;
+  color: var(--steel);
+}
+
+.clients-count-note {
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+.clients-resultbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clients-sortpicker {
+  display: flex;
+  align-items: stretch;
+  gap: 0.375rem;
+}
+
+/* On desktop the column headers are the sort control, so this is redundant. */
+@media (min-width: 1024px) {
+  .clients-sortpicker {
+    display: none;
+  }
+}
+
+.clients-select {
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  background: transparent;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--stone);
+}
+
+.clients-select option {
+  background: var(--onyx);
+  color: var(--stone);
+}
+
+.clients-dirtoggle,
+.clients-copy {
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  padding: 0 0.9375rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--stone);
+  transition:
+    color 600ms var(--ease-lux),
+    border-color 600ms var(--ease-lux);
+}
+
+.clients-dirtoggle:hover,
+.clients-dirtoggle:focus-visible,
+.clients-copy:hover,
+.clients-copy:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ---------------------------------------------------------------- TABLE -- */
+
+.clients-table-wrap {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .clients-table-wrap {
+    display: block;
+  }
+}
+
+.clients-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.clients-table th,
+.clients-table td {
+  padding: 0.9375rem 1rem 0.9375rem 0;
+  vertical-align: middle;
+}
+
+.clients-table [data-align='right'] {
+  text-align: right;
+  padding-right: 0;
+  padding-left: 1rem;
+}
+
+.clients-table thead th {
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 18%, transparent);
+  padding-top: 0;
+  padding-bottom: 0.75rem;
+  font-weight: 400;
+}
+
+.clients-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--steel);
+  transition: color 600ms var(--ease-lux);
+}
+
+.clients-table [data-align='right'] .clients-sort {
+  flex-direction: row-reverse;
+}
+
+.clients-sort:hover,
+.clients-sort:focus-visible {
+  color: var(--stone);
+}
+
+.clients-sort[data-active='true'] {
+  color: var(--gold);
+}
+
+.clients-sort-caret {
+  opacity: 0.55;
+}
+
+.clients-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 9%, transparent);
+  cursor: pointer;
+  transition: background-color 600ms var(--ease-lux);
+}
+
+.clients-row:hover,
+.clients-row[data-open='true'] {
+  background: color-mix(in srgb, var(--stone) 4%, transparent);
+}
+
+.clients-row:focus-within {
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.clients-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  min-height: 44px;
+}
+
+.clients-name-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.clients-name-main {
+  font-size: 0.9375rem;
+  letter-spacing: 0.04em;
+  color: var(--stone);
+  transition: color 600ms var(--ease-lux);
+}
+
+.clients-name:hover .clients-name-main,
+.clients-name:focus-visible .clients-name-main {
+  color: var(--gold);
+}
+
+.clients-name-sub {
+  font-size: 0.6875rem;
+  color: var(--steel);
+}
+
+/* Deterministic roster swatch, keyed off client.colorIndex (0-7). Muted
+   metals only — this is an identity cue, not a rainbow legend. */
+.clients-swatch {
+  height: 26px;
+  width: 2px;
+  flex: none;
+  background: var(--gold);
+}
+.clients-swatch[data-color='0'] { background: color-mix(in srgb, var(--gold) 100%, transparent); }
+.clients-swatch[data-color='1'] { background: color-mix(in srgb, var(--gold) 70%, transparent); }
+.clients-swatch[data-color='2'] { background: color-mix(in srgb, var(--stone) 55%, transparent); }
+.clients-swatch[data-color='3'] { background: color-mix(in srgb, var(--gold-deep) 90%, transparent); }
+.clients-swatch[data-color='4'] { background: color-mix(in srgb, var(--steel) 90%, transparent); }
+.clients-swatch[data-color='5'] { background: color-mix(in srgb, var(--stone) 32%, transparent); }
+.clients-swatch[data-color='6'] { background: color-mix(in srgb, var(--gold) 45%, transparent); }
+.clients-swatch[data-color='7'] { background: color-mix(in srgb, var(--steel) 55%, transparent); }
+
+.clients-level {
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--stone) 80%, transparent);
+}
+
+.clients-age {
+  margin-left: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--steel);
+}
+
+.clients-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--stone) 78%, transparent);
+}
+
+.clients-status-dot {
+  height: 5px;
+  width: 5px;
+  flex: none;
+  background: currentColor;
+}
+
+.clients-status[data-status='Owes Balance'] {
+  color: #c9705a;
+}
+.clients-status[data-status='Paid In Full'] {
+  color: var(--gold);
+}
+.clients-status[data-status='Trial'] {
+  color: color-mix(in srgb, var(--gold) 72%, var(--stone));
+}
+.clients-status[data-status='Inactive'] {
+  color: var(--steel);
+}
+
+.clients-cell-main {
+  display: block;
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--stone) 88%, transparent);
+}
+
+.clients-cell-sub {
+  display: block;
+  margin-top: 0.1875rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+}
+
+.clients-owing {
+  color: #c9705a;
+}
+
+/* Sessions-left meter: figure, then a burn-down hairline under it. */
+.clients-meter {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 4.5rem;
+}
+
+.clients-meter-value {
+  font-size: 0.9375rem;
+  color: var(--stone);
+}
+
+.clients-meter[data-bucket='low'] .clients-meter-value {
+  color: var(--gold);
+}
+
+.clients-meter[data-bucket='exhausted'] .clients-meter-value,
+.clients-meter[data-bucket='none'] .clients-meter-value {
+  color: var(--steel);
+}
+
+.clients-meter-track {
+  display: block;
+  height: 2px;
+  width: 3.5rem;
+  background: color-mix(in srgb, var(--stone) 12%, transparent);
+}
+
+.clients-meter-fill {
+  display: block;
+  height: 100%;
+  background: color-mix(in srgb, var(--stone) 55%, transparent);
+  transition: width 900ms var(--ease-lux);
+}
+
+.clients-meter[data-bucket='low'] .clients-meter-fill {
+  background: var(--gold);
+}
+
+/* Compliance pips. Filled = on file, hollow = missing. */
+.clients-pips {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.clients-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.375rem;
+  border: 1px solid color-mix(in srgb, var(--stone) 16%, transparent);
+  padding: 0.1875rem 0.25rem;
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+}
+
+.clients-pip[data-ok='true'] {
+  border-color: color-mix(in srgb, var(--stone) 26%, transparent);
+  color: color-mix(in srgb, var(--stone) 72%, transparent);
+}
+
+.clients-pip[data-ok='false'] {
+  border-color: color-mix(in srgb, #c9705a 55%, transparent);
+  color: #c9705a;
+}
+
+/* ---------------------------------------------------------------- CARDS -- */
+
+.clients-cards {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .clients-cards {
+    display: none;
+  }
+}
+
+.clients-card {
+  position: relative;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 10%, transparent);
+  padding: 1.25rem 0;
+  transition: background-color 600ms var(--ease-lux);
+}
+
+.clients-card[data-open='true'] {
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+/* ONE focusable control per card, stretched over the whole thing. The body
+   below is inert, so there is no nested-interactive trap and no ambiguity
+   about what a tap does. */
+.clients-card-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+}
+
+.clients-card-hit:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: -2px;
+}
+
+.clients-card-body {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.clients-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.clients-card-id {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.clients-card-name {
+  font-size: 1.0625rem;
+  letter-spacing: 0.04em;
+}
+
+.clients-card-sub {
+  margin-top: 0.3125rem;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--steel);
+  overflow-wrap: anywhere;
+}
+
+.clients-card-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.875rem 0.75rem;
+}
+
+.clients-card-grid dt {
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.clients-card-grid dd {
+  margin-top: 0.3125rem;
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--stone) 90%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.clients-card-grid dd[data-bucket='low'] {
+  color: var(--gold);
+}
+
+.clients-card-grid dd[data-bucket='exhausted'],
+.clients-card-grid dd[data-bucket='none'] {
+  color: var(--steel);
+}
+
+.clients-card-foot {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+}
+
+.clients-card-tags {
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+}
+
+/* ---------------------------------------------------------------- EMPTY -- */
+
+.clients-empty {
+  margin-top: 3.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  padding-top: 2rem;
+  max-width: 46rem;
+}
+
+.clients-empty-title {
+  margin-top: 1rem;
+  font-size: clamp(1.375rem, 5vw, 2rem);
+  line-height: 1.15;
+}
+
+.clients-empty-body {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--steel);
+}
+
+.clients-empty-list {
+  margin-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+}
+
+.clients-empty-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  padding: 0.75rem 0;
+}
+
+.clients-empty-dim {
+  font-size: 0.875rem;
+  color: var(--stone);
+}
+
+.clients-empty-count {
+  font-size: 0.75rem;
+  color: var(--gold);
+}
+
+.clients-empty-reset {
+  margin-top: 1.75rem;
+  min-height: 44px;
+  border: 1px solid var(--gold);
+  padding: 0.625rem 1.25rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  transition: background-color 600ms var(--ease-lux);
+}
+
+.clients-empty-reset:hover,
+.clients-empty-reset:focus-visible {
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+}
+
+.clients-empty-foot {
+  margin-top: 1.5rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+/* ---------------------------------------------------------------- SHEET -- */
+
+.clients-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.clients-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: color-mix(in srgb, #000 72%, transparent);
+  animation: clients-scrim-in 500ms var(--ease-lux) both;
+  cursor: default;
+}
+
+@keyframes clients-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.clients-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 44rem;
+  max-height: 100svh;
+  background: var(--onyx);
+  border-left: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  animation: clients-sheet-in 700ms var(--ease-lux) both;
+}
+
+@keyframes clients-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(4%);
+  }
+}
+
+.clients-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 14%, transparent);
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+
+.clients-sheet-title {
+  margin-top: 0.625rem;
+  font-size: clamp(1.5rem, 6vw, 2.125rem);
+  line-height: 1;
+}
+
+.clients-sheet-meta {
+  margin-top: 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--steel);
+}
+
+.clients-sheet-dot {
+  height: 3px;
+  width: 3px;
+  background: color-mix(in srgb, var(--steel) 80%, transparent);
+}
+
+.clients-sheet-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  width: 44px;
+  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--stone);
+  transition:
+    color 600ms var(--ease-lux),
+    border-color 600ms var(--ease-lux);
+}
+
+.clients-sheet-close:hover,
+.clients-sheet-close:focus-visible {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.clients-sheet-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem 1.25rem 4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .clients-sheet-head {
+    padding: 1.75rem 2rem;
+  }
+  .clients-sheet-body {
+    padding: 2rem 2rem 5rem;
+  }
+}
+
+.clients-sheet-figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  padding-bottom: 1.75rem;
+}
+
+@media (min-width: 560px) {
+  .clients-sheet-figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.clients-sheet-figure-value {
+  margin-top: 0.5rem;
+  font-size: 1.375rem;
+  line-height: 1.1;
+}
+
+.clients-sheet-section {
+  margin-top: 2.25rem;
+}
+
+.clients-sheet-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  padding-bottom: 0.75rem;
+}
+
+.clients-sheet-section-meta {
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.clients-sheet-list {
+  margin-top: 0.25rem;
+}
+
+.clients-sheet-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 8%, transparent);
+  padding: 0.6875rem 0;
+}
+
+.clients-sheet-row dt {
+  flex: none;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.clients-sheet-row dd {
+  text-align: right;
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--stone) 90%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.clients-sheet-tags {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.clients-sheet-tag {
+  border: 1px solid color-mix(in srgb, var(--stone) 18%, transparent);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+}
+
+.clients-sheet-note {
+  margin-top: 1rem;
+  border-left: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  padding-left: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--stone) 78%, transparent);
+}
+
+.clients-sheet-package {
+  margin-top: 1rem;
+  font-size: 1.0625rem;
+  color: var(--gold);
+}
+
+.clients-sheet-empty {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--steel);
+}
+
+/* Compliance checklist. */
+.clients-check {
+  margin-top: 0.5rem;
+}
+
+.clients-check li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 8%, transparent);
+  padding: 0.875rem 0;
+}
+
+.clients-check-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  width: 20px;
+  flex: none;
+  border: 1px solid currentColor;
+  font-size: 0.6875rem;
+  color: var(--steel);
+}
+
+.clients-check li[data-ok='true'] .clients-check-mark {
+  color: var(--gold);
+}
+
+.clients-check li[data-ok='false'] .clients-check-mark {
+  color: #c9705a;
+}
+
+.clients-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.clients-check-label {
+  font-size: 0.875rem;
+  color: var(--stone);
+}
+
+.clients-check-detail {
+  font-size: 0.6875rem;
+  color: var(--steel);
+  overflow-wrap: anywhere;
+}
+
+/* Session + payment ledgers. */
+.clients-ledger {
+  margin-top: 0.5rem;
+}
+
+.clients-ledger li {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--stone) 8%, transparent);
+  padding: 0.75rem 0;
+}
+
+.clients-ledger-date {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--gold-deep);
+}
+
+.clients-ledger-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.clients-ledger-title {
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--stone) 90%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.clients-ledger-sub {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+}
+
+.clients-ledger-amount {
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--stone) 85%, transparent);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- A11Y/MOTION */
+
+.clients-page :focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.clients-sheet :focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clients-sheet,
+  .clients-sheet-scrim {
+    animation: none;
+  }
+  .clients-statusbar-seg,
+  .clients-meter-fill,
+  .clients-row,
+  .clients-card,
+  .clients-view-chip,
+  .clients-chip,
+  .clients-option,
+  .clients-input,
+  .clients-back,
+  .clients-logout,
+  .clients-sort,
+  .clients-name-main,
+  .clients-copy,
+  .clients-dirtoggle,
+  .clients-sheet-close,
+  .clients-empty-reset,
+  .clients-facets-toggle {
+    transition: none;
+  }
+}

@@ -1,0 +1,696 @@
+/* ==========================================================================
+   JV GOLD — FINANCE (/private/finance)
+   ==========================================================================
+
+   Plain CSS only. Tailwind utilities carry the page layout; this file carries
+   what utilities cannot: the SVG chart internals, the choreographed entrance,
+   the sliding period indicator and the hairline detail.
+
+   NO-JS CONTRACT
+   Everything here is written so the server-rendered document is already the
+   finished state. The "before" frames are all scoped under `.js` — the class
+   root.jsx stamps on <html> — so a visitor without JavaScript sees complete
+   bars, a complete line and complete figures rather than an empty frame.
+
+   REDUCED MOTION
+   One block at the bottom neutralises every transition on this page. Nothing
+   here animates anything but transform and opacity, so there is nothing that
+   needs a second mechanism.
+   ========================================================================== */
+
+:root {
+  --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fin-hairline: rgba(230, 227, 221, 0.12);
+  --fin-hairline-strong: rgba(230, 227, 221, 0.22);
+  --fin-bar: rgba(230, 227, 221, 0.18);
+  --fin-bar-muted: rgba(230, 227, 221, 0.07);
+}
+
+/* ------------------------------------------------------------------ a11y */
+
+.fin-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Every interactive thing on this page gets the same visible gold ring. */
+.fin-switcher-btn:focus-visible,
+.fin-data > summary:focus-visible {
+  outline: 2px solid var(--gold, #c8a25b);
+  outline-offset: 3px;
+}
+
+/* -------------------------------------------------------- entrance rise */
+
+.fin-rise {
+  opacity: 1;
+  transform: none;
+}
+
+.js .fin-rise {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 820ms var(--fin-ease),
+    transform 820ms var(--fin-ease);
+  transition-delay: var(--fin-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.js .fin-rise.is-in {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+/* ================================================================== KPIs */
+
+.fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--fin-hairline);
+  border-block: 1px solid var(--fin-hairline);
+}
+
+.fin-tile {
+  background: #111111;
+  padding: 1.35rem 1rem 1.6rem;
+  min-width: 0;
+}
+
+/* The hero spans the full width of a phone and half a desktop row. */
+.fin-tile-hero {
+  grid-column: 1 / -1;
+}
+
+/* Figure sizes are re-clamped at every breakpoint rather than set once.
+   The tiles get NARROWER when the grid goes from 2 columns to 4 to 6, so a
+   single viewport-based clamp would overflow a seven-character figure like
+   "$28,835" the moment the layout widens. Each block below is sized against
+   the tile width it actually produces. */
+.fin-figure {
+  font-size: clamp(1.5rem, 7vw, 2.125rem);
+  line-height: 1;
+  margin-top: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.fin-tile-hero .fin-figure {
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .fin-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .fin-tile-hero {
+    grid-column: span 2;
+  }
+  .fin-tile {
+    padding: 1.6rem 1.25rem 1.85rem;
+  }
+  .fin-figure {
+    font-size: clamp(1.25rem, 2.6vw, 1.9rem);
+  }
+  .fin-tile-hero .fin-figure {
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+  }
+}
+
+@media (min-width: 1100px) {
+  .fin-kpis {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .fin-tile-hero {
+    grid-column: span 2;
+  }
+  .fin-figure {
+    font-size: clamp(1.25rem, 1.9vw, 1.9rem);
+  }
+  .fin-tile-hero .fin-figure {
+    font-size: clamp(2.5rem, 3.4vw, 3.5rem);
+  }
+}
+
+/* ----------------------------------------------------------- delta chip */
+
+.fin-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid currentcolor;
+  white-space: nowrap;
+}
+
+.fin-delta.is-good {
+  color: var(--gold, #c8a25b);
+}
+
+.fin-delta.is-bad {
+  color: #b8756a;
+}
+
+.fin-delta.is-flat {
+  color: #6b6b6b;
+}
+
+/* ------------------------------------------------------------ sparkline */
+
+.fin-spark {
+  position: relative;
+  height: 46px;
+}
+
+.fin-spark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.fin-spark-area {
+  fill: rgba(200, 162, 91, 0.1);
+}
+
+.fin-spark-line {
+  stroke: var(--gold, #c8a25b);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.js .fin-spark-line {
+  transition: stroke-dashoffset 1100ms var(--fin-ease) 120ms;
+}
+
+.js .fin-spark-line:not(.is-drawn) {
+  stroke-dashoffset: 1;
+  transition: none;
+}
+
+.fin-spark-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold, #c8a25b);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ================================================================ charts */
+
+.fin-chart {
+  margin: 0;
+}
+
+.fin-plot {
+  position: relative;
+  /* Room on the right for the axis money labels. */
+  padding-right: 3.25rem;
+}
+
+.fin-plot-bars {
+  height: 190px;
+}
+
+.fin-plot-line {
+  height: 210px;
+}
+
+@media (min-width: 768px) {
+  .fin-plot-bars {
+    height: 260px;
+  }
+  .fin-plot-line {
+    height: 280px;
+  }
+}
+
+.fin-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* --- gridlines: HTML, so the type stays crisp under the SVG stretch --- */
+
+.fin-grid {
+  position: absolute;
+  inset: 0 3.25rem 0 0;
+  pointer-events: none;
+}
+
+.fin-grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--fin-hairline);
+}
+
+.fin-grid-line.is-base {
+  background: var(--fin-hairline-strong);
+}
+
+.fin-grid-label {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 0.6rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: #6b6b6b;
+  white-space: nowrap;
+}
+
+/* --- bars ------------------------------------------------------------- */
+
+.fin-bar {
+  fill: var(--fin-bar);
+  transform: scaleY(var(--fin-scale, 1));
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.js .fin-bar {
+  transition:
+    transform 900ms var(--fin-ease),
+    fill 700ms var(--fin-ease);
+}
+
+.js .fin-bar:not(.is-in) {
+  transform: scaleY(0);
+}
+
+.fin-bar.is-muted {
+  fill: var(--fin-bar-muted);
+}
+
+/* Exactly one gold bar: the strongest month inside the window. */
+.fin-bar.is-best {
+  fill: var(--gold, #c8a25b);
+}
+
+/* --- axis labels ------------------------------------------------------ */
+
+.fin-axis {
+  display: grid;
+  margin-top: 0.85rem;
+  padding-right: 3.25rem;
+}
+
+.fin-axis-label {
+  text-align: center;
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(107, 107, 107, 0.65);
+  transition: color 600ms var(--fin-ease);
+  min-width: 0;
+}
+
+.fin-axis-label.is-active {
+  color: #6b6b6b;
+}
+
+.fin-axis-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.85rem;
+  padding-right: 3.25rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+}
+
+.fin-caption {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #6b6b6b;
+}
+
+/* --- cumulative line -------------------------------------------------- */
+
+.fin-line {
+  stroke: var(--gold, #c8a25b);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.js .fin-line {
+  transition: stroke-dashoffset 1600ms var(--fin-ease) 200ms;
+}
+
+.js .fin-line:not(.is-drawn) {
+  stroke-dashoffset: 1;
+  transition: none;
+}
+
+.fin-area {
+  opacity: 1;
+}
+
+.js .fin-area {
+  transition: opacity 1200ms var(--fin-ease) 500ms;
+}
+
+.js .fin-area:not(.is-drawn) {
+  opacity: 0;
+  transition: none;
+}
+
+.fin-endpoint {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold, #c8a25b);
+  box-shadow: 0 0 0 4px rgba(200, 162, 91, 0.16);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 1;
+}
+
+.js .fin-endpoint {
+  transition: opacity 700ms var(--fin-ease) 1500ms;
+}
+
+.js .fin-endpoint:not(.is-drawn) {
+  opacity: 0;
+  transition: none;
+}
+
+/* =========================================================== ranked bars */
+
+.fin-summary {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: #6b6b6b;
+  margin-bottom: 1.75rem;
+  max-width: 46ch;
+}
+
+.fin-rank {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fin-rank-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--fin-hairline);
+}
+
+.fin-rank-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.fin-rank-index {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  color: rgba(107, 107, 107, 0.7);
+  padding-top: 0.2rem;
+}
+
+.fin-rank-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fin-rank-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fin-rank-label {
+  font-size: 0.9375rem;
+  color: #e6e3dd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.fin-rank-value {
+  flex: 0 0 auto;
+  font-size: 0.9375rem;
+  color: #e6e3dd;
+}
+
+.fin-rank-row:first-child .fin-rank-value {
+  color: var(--gold, #c8a25b);
+}
+
+.fin-rank-track {
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-top: 0.7rem;
+}
+
+.fin-rank-rail {
+  fill: rgba(230, 227, 221, 0.06);
+}
+
+.fin-rank-fill {
+  fill: var(--fin-bar);
+  transform: scaleX(var(--fin-scale, 1));
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+}
+
+.js .fin-rank-fill {
+  transition: transform 900ms var(--fin-ease);
+}
+
+.js .fin-rank-fill:not(.is-in) {
+  transform: scaleX(0);
+}
+
+.fin-rank-fill.is-best {
+  fill: var(--gold, #c8a25b);
+}
+
+.fin-rank-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+}
+
+/* ======================================================= period switcher */
+
+.fin-switcher-shell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.fin-switcher {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--fin-tabs, 4), minmax(0, 1fr));
+  border: 1px solid var(--fin-hairline-strong);
+  width: 100%;
+  max-width: 26rem;
+}
+
+.fin-switcher-indicator {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: calc(100% / var(--fin-tabs, 4));
+  background: var(--gold, #c8a25b);
+  transform: translateX(calc(100% * var(--fin-tab-index, 0)));
+  pointer-events: none;
+}
+
+.js .fin-switcher-indicator {
+  transition: transform 700ms var(--fin-ease);
+}
+
+.fin-switcher-btn {
+  /* 44px minimum touch target — this page is used one-handed on a phone. */
+  min-height: 44px;
+  padding: 0.5rem 0.35rem;
+  background: transparent;
+  border: 0;
+  color: #6b6b6b;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 500ms var(--fin-ease);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.fin-switcher-btn:hover {
+  color: #e6e3dd;
+}
+
+.fin-switcher-btn.is-active {
+  color: var(--gold, #c8a25b);
+}
+
+.fin-switcher-range {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+}
+
+/* ========================================================== data tables */
+
+.fin-data {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--fin-hairline);
+  padding-top: 1rem;
+}
+
+.fin-data > summary {
+  cursor: pointer;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+  /* Comfortable target without turning the row into a button slab. */
+  padding: 0.6rem 0;
+  list-style-position: outside;
+}
+
+.fin-data > summary:hover {
+  color: var(--gold, #c8a25b);
+}
+
+.fin-data-scroll {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fin-table {
+  width: 100%;
+  min-width: 22rem;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.fin-table caption {
+  text-align: left;
+}
+
+.fin-table th,
+.fin-table td {
+  text-align: right;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--fin-hairline);
+  white-space: nowrap;
+}
+
+.fin-table thead th {
+  font-weight: 400;
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+}
+
+.fin-table th:first-child,
+.fin-table td:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+
+.fin-table tbody th {
+  font-weight: 400;
+  color: #e6e3dd;
+}
+
+.fin-table tbody td {
+  color: rgba(230, 227, 221, 0.75);
+}
+
+/* ================================================== REDUCED MOTION */
+
+@media (prefers-reduced-motion: reduce) {
+  .js .fin-rise,
+  .js .fin-rise.is-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .js .fin-bar,
+  .js .fin-bar:not(.is-in) {
+    transform: scaleY(var(--fin-scale, 1));
+    transition: none;
+  }
+
+  .js .fin-rank-fill,
+  .js .fin-rank-fill:not(.is-in) {
+    transform: scaleX(var(--fin-scale, 1));
+    transition: none;
+  }
+
+  .js .fin-line,
+  .js .fin-line:not(.is-drawn),
+  .js .fin-spark-line,
+  .js .fin-spark-line:not(.is-drawn) {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  .js .fin-area,
+  .js .fin-area:not(.is-drawn),
+  .js .fin-endpoint,
+  .js .fin-endpoint:not(.is-drawn) {
+    opacity: 1;
+    transition: none;
+  }
+
+  .js .fin-switcher-indicator,
+  .fin-axis-label,
+  .fin-switcher-btn {
+    transition: none;
+  }
+}

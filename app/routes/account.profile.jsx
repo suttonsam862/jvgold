@@ -89,46 +89,67 @@ export default function AccountProfile() {
 
   return (
     <div className="account-profile">
-      <h2>My profile</h2>
-      <br />
-      <Form method="PUT">
-        <legend>Personal information</legend>
-        <fieldset>
-          <label htmlFor="firstName">First name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            type="text"
-            autoComplete="given-name"
-            placeholder="First name"
-            aria-label="First name"
-            defaultValue={customer.firstName ?? ''}
-            minLength={2}
-          />
-          <label htmlFor="lastName">Last name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            type="text"
-            autoComplete="family-name"
-            placeholder="Last name"
-            aria-label="Last name"
-            defaultValue={customer.lastName ?? ''}
-            minLength={2}
-          />
+      <header data-reveal>
+        <h2 className="display acct-section-title">Profile</h2>
+        <p className="acct-lede">
+          The name we use on your orders and correspondence.
+        </p>
+      </header>
+
+      <Form
+        method="PUT"
+        className="acct-form"
+        style={{marginTop: '3rem'}}
+        data-reveal
+      >
+        <fieldset className="acct-fieldset acct-fieldset-2">
+          <div className="acct-field">
+            <label className="acct-label" htmlFor="firstName">
+              First name
+            </label>
+            <input
+              className="acct-input"
+              id="firstName"
+              name="firstName"
+              type="text"
+              autoComplete="given-name"
+              placeholder="First name"
+              defaultValue={customer.firstName ?? ''}
+              minLength={2}
+            />
+          </div>
+          <div className="acct-field">
+            <label className="acct-label" htmlFor="lastName">
+              Last name
+            </label>
+            <input
+              className="acct-input"
+              id="lastName"
+              name="lastName"
+              type="text"
+              autoComplete="family-name"
+              placeholder="Last name"
+              defaultValue={customer.lastName ?? ''}
+              minLength={2}
+            />
+          </div>
         </fieldset>
+
         {action?.error ? (
-          <p>
-            <mark>
-              <small>{action.error}</small>
-            </mark>
+          <p className="acct-error" style={{marginTop: '2rem'}} role="alert">
+            {action.error}
           </p>
-        ) : (
-          <br />
-        )}
-        <button type="submit" disabled={state !== 'idle'}>
-          {state !== 'idle' ? 'Updating' : 'Update'}
-        </button>
+        ) : null}
+
+        <div className="acct-actions">
+          <button
+            className="acct-btn acct-btn-primary"
+            type="submit"
+            disabled={state !== 'idle'}
+          >
+            {state !== 'idle' ? 'Saving' : 'Save changes'}
+          </button>
+        </div>
       </Form>
     </div>
   );

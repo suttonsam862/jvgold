@@ -1,4 +1,4 @@
-import {useLoaderData} from 'react-router';
+import {useLoaderData, Link} from 'react-router';
 import {
   getSelectedProductOptions,
   Analytics,
@@ -11,13 +11,18 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
+import styles from '~/styles/commerce.css?url';
+
+export function links() {
+  return [{rel: 'stylesheet', href: styles}];
+}
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = ({data}) => {
   return [
-    {title: `Hydrogen | ${data?.product.title ?? ''}`},
+    {title: `${data?.product.title ?? 'Product'} — JV GOLD`},
     {
       rel: 'canonical',
       href: `/products/${data?.product.handle}`,
@@ -103,31 +108,59 @@ export default function Product() {
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
-  const {title, descriptionHtml} = product;
+  const {title, descriptionHtml, vendor} = product;
 
   return (
-    <div className="product">
-      <ProductImage image={selectedVariant?.image} />
-      <div className="product-main">
-        <h1>{title}</h1>
-        <ProductPrice
-          price={selectedVariant?.price}
-          compareAtPrice={selectedVariant?.compareAtPrice}
-        />
-        <br />
-        <ProductForm
-          productOptions={productOptions}
-          selectedVariant={selectedVariant}
-        />
-        <br />
-        <br />
-        <p>
-          <strong>Description</strong>
-        </p>
-        <br />
-        <div dangerouslySetInnerHTML={{__html: descriptionHtml}} />
-        <br />
+    <section className="mx-auto max-w-[1440px] px-5 pt-10 pb-28 md:px-10 md:pt-16 md:pb-36">
+      <nav
+        aria-label="Breadcrumb"
+        className="mb-10 flex flex-wrap items-center gap-x-3 gap-y-2 border-b rule pb-5 text-[0.68rem] uppercase tracking-[0.18em] text-steel md:mb-16"
+      >
+        <Link
+          to="/collections"
+          prefetch="intent"
+          className="transition-colors duration-500 hover:text-onyx"
+        >
+          The Shop
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span className="text-onyx">{title}</span>
+      </nav>
+
+      <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
+        <div data-reveal>
+          <ProductImage image={selectedVariant?.image} />
+        </div>
+
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          {vendor ? <p className="tag text-gold-deep">{vendor}</p> : null}
+          <h1 className="display mt-4 text-[clamp(2rem,4.6vw,3.6rem)]">
+            {title}
+          </h1>
+
+          <ProductPrice
+            price={selectedVariant?.price}
+            compareAtPrice={selectedVariant?.compareAtPrice}
+            className="mt-6 mb-10 text-xl text-gold-deep md:text-2xl"
+          />
+
+          <ProductForm
+            productOptions={productOptions}
+            selectedVariant={selectedVariant}
+          />
+
+          {descriptionHtml ? (
+            <div className="mt-14 border-t rule pt-8">
+              <h2 className="tag text-steel">THE DETAIL</h2>
+              <div
+                className="jv-rte mt-6"
+                dangerouslySetInnerHTML={{__html: descriptionHtml}}
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
+
       <Analytics.ProductView
         data={{
           products: [
@@ -143,7 +176,7 @@ export default function Product() {
           ],
         }}
       />
-    </div>
+    </section>
   );
 }
 

@@ -1,0 +1,1404 @@
+/* ===========================================================================
+   JV GOLD — THE ARCHIVE
+   Route-scoped styles for the scroll-driven roadmap. Tailwind utilities do the
+   ordinary work in the JSX; this file holds the layered scene machinery, the
+   chapter rail, the plate frames and the lightbox — the things that have no
+   sensible utility equivalent.
+
+   Motion rules honoured here:
+   - every resting state is the *visible* state, so SSR / no-JS / unsupported
+     browsers see finished, readable content;
+   - all scroll-driven motion sits behind @supports (animation-timeline: view())
+     AND @media (prefers-reduced-motion: no-preference);
+   - only transform / translate / opacity / filter are animated.
+   ========================================================================= */
+
+.ar-root {
+  /* Site header is taller on mobile (it carries a second nav row). */
+  --ar-hdr: 94px;
+  --ar-rail: 46px;
+  --ar-offset: calc(var(--ar-hdr) + var(--ar-rail));
+  --ar-stage-h: calc(100svh - var(--ar-offset));
+  --ar-line: rgba(200, 162, 91, 0.42);
+}
+
+@media (min-width: 768px) {
+  .ar-root {
+    --ar-hdr: 64px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ar-root {
+    --ar-rail: 0px;
+  }
+}
+
+/* ------------------------------------------------------------ cascade repair
+   reset.css styles `section`, `h1`, `h2`, `p`, `li` and `a` with *unlayered*
+   element rules. Unlayered author styles outrank every cascade layer, including
+   Tailwind's `utilities` — so `text-lg`, `mt-6`, `py-24` and friends silently
+   lose on those elements. Inside the archive we hand the affected properties
+   back down with `revert-layer`, which rolls each one to the highest layer
+   below (utilities → components → base/preflight). Written at type-selector
+   specificity and wrapped in :where() so every class in this file, in
+   jvgold.css and in the JSX still wins outright; scoped to .ar-root so nothing
+   outside this route changes. */
+:where(.ar-root) section {
+  padding: revert-layer;
+}
+
+:where(.ar-root) :is(h1, h2, p) {
+  margin: revert-layer;
+  font-size: revert-layer;
+  font-weight: revert-layer;
+  line-height: revert-layer;
+}
+
+:where(.ar-root) li {
+  margin-bottom: revert-layer;
+}
+
+:where(.ar-root) a {
+  color: revert-layer;
+}
+
+:where(.ar-root) a:hover {
+  text-decoration: revert-layer;
+}
+
+/* ---------------------------------------------------------------- container
+   Reserves the left gutter that the desktop rail lives in. */
+.ar-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .ar-container {
+    padding-inline: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ar-container {
+    padding-left: 9.5rem;
+  }
+}
+
+/* --------------------------------------------------------------------- hero
+   A pinned opening stage: photograph at the back, a ghost year in the middle,
+   the masthead in front. The extra height below gives the pin something to
+   travel through. */
+.ar-hero {
+  position: relative;
+  height: 158svh;
+  background: var(--onyx-deep);
+  color: var(--stone);
+}
+
+.ar-hero__stage {
+  position: sticky;
+  top: var(--ar-hdr);
+  height: calc(100svh - var(--ar-hdr));
+  overflow: clip;
+}
+
+.ar-hero__fore {
+  z-index: 2;
+}
+
+/* ------------------------------------------------------------------- scenes */
+.ar-scene {
+  position: relative;
+  scroll-margin-top: var(--ar-offset);
+}
+
+.ar-stage {
+  position: sticky;
+  top: var(--ar-offset);
+  z-index: 0;
+  height: var(--ar-stage-h);
+  overflow: clip;
+}
+
+/* A soft floor under the stage so the foreground column reads as a separate
+   plane sitting *on* the photograph rather than pasted over it. */
+.ar-stage__lift {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 34%;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(9, 9, 9, 0.72), transparent);
+}
+
+.ar-tone-light .ar-stage__lift {
+  background: linear-gradient(to top, rgba(230, 227, 221, 0.85), transparent);
+}
+
+.ar-flow {
+  position: relative;
+  z-index: 1;
+  margin-top: calc(-1 * var(--ar-stage-h));
+}
+
+/* The foreground column casts back onto the pinned stage. */
+.ar-flow > :not(.ar-title-screen) {
+  box-shadow: 0 -3rem 5rem -1rem rgba(9, 9, 9, 0.75);
+}
+
+.ar-tone-light .ar-flow > :not(.ar-title-screen) {
+  box-shadow: 0 -3rem 5rem -1.5rem rgba(26, 26, 26, 0.22);
+}
+
+/* ------------------------------------------------------------ title screens */
+.ar-title-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: var(--ar-stage-h);
+  padding-block: 4rem 3.5rem;
+}
+
+.ar-title-screen__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.ar-title-screen[data-align='right'] .ar-title-screen__inner {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.ar-title-screen[data-align='center'] .ar-title-screen__inner {
+  align-items: center;
+  text-align: center;
+}
+
+.ar-title-screen__chapter {
+  color: var(--gold);
+}
+
+.ar-title-screen[data-tone='light'] .ar-title-screen__chapter {
+  color: var(--gold-deep);
+}
+
+.ar-title-screen__title {
+  margin-top: 1.4rem;
+  font-size: clamp(2.9rem, 8.6vw, 7.5rem);
+  line-height: 0.86;
+  letter-spacing: -0.022em;
+  color: var(--stone);
+}
+
+.ar-title-screen[data-tone='light'] .ar-title-screen__title {
+  color: var(--onyx);
+}
+
+/* Monumental era numerals — the years are the loudest number on the screen. */
+.ar-title-screen__years {
+  margin-top: 1.6rem;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 5.4vw, 4.25rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(200, 162, 91, 0.85);
+}
+
+@media (min-width: 768px) {
+  .ar-title-screen__years {
+    -webkit-text-stroke-width: 1.5px;
+  }
+}
+
+.ar-title-screen[data-tone='light'] .ar-title-screen__years {
+  -webkit-text-stroke-color: rgba(168, 133, 63, 0.9);
+}
+
+.ar-title-screen__standfirst {
+  margin-top: 1.9rem;
+  max-width: 30rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: rgba(230, 227, 221, 0.72);
+}
+
+.ar-title-screen[data-tone='light'] .ar-title-screen__standfirst {
+  color: rgba(26, 26, 26, 0.72);
+}
+
+/* Stage scrims — one per chapter so the mood shifts as you travel. */
+.ar-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ar-scrim--floor {
+  background:
+    radial-gradient(120% 90% at 70% 30%, rgba(17, 17, 17, 0) 20%, rgba(17, 17, 17, 0.6) 100%),
+    linear-gradient(
+      to top,
+      #111 4%,
+      rgba(17, 17, 17, 0.74) 44%,
+      rgba(17, 17, 17, 0.16) 100%
+    );
+}
+
+.ar-scrim--side {
+  background:
+    linear-gradient(to right, rgba(17, 17, 17, 0.92) 0%, rgba(17, 17, 17, 0.08) 64%),
+    radial-gradient(100% 80% at 20% 50%, rgba(17, 17, 17, 0) 35%, rgba(17, 17, 17, 0.65) 100%),
+    linear-gradient(to top, #111 2%, rgba(17, 17, 17, 0.32) 55%);
+}
+
+.ar-scrim--vignette {
+  background:
+    radial-gradient(115% 85% at 50% 42%, rgba(17, 17, 17, 0) 28%, rgba(17, 17, 17, 0.94) 100%),
+    linear-gradient(to top, #111 3%, rgba(17, 17, 17, 0.22) 60%);
+}
+
+.ar-scrim--grid {
+  background-image:
+    linear-gradient(to right, rgba(26, 26, 26, 0.09) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(26, 26, 26, 0.09) 1px, transparent 1px);
+  background-size: 96px 96px;
+}
+
+/* ---------------------------------------------------------------- ghost type
+   Oversized decorative numerals in the midground. Always aria-hidden. */
+.ar-ghost {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 0.78;
+}
+
+.ar-ghost--stroke {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(200, 162, 91, 0.55);
+}
+
+@media (min-width: 768px) {
+  .ar-ghost--stroke {
+    -webkit-text-stroke-width: 2.5px;
+  }
+}
+
+.ar-ghost--solid {
+  color: rgba(230, 227, 221, 0.07);
+}
+
+.ar-ghost--ink {
+  color: rgba(26, 26, 26, 0.07);
+}
+
+/* ------------------------------------------------------------------ the rail
+   Mobile: a sticky horizontal chip strip under the header.
+   Desktop: a fixed vertical spine parked in the reserved left gutter. */
+.ar-rail {
+  position: sticky;
+  top: var(--ar-hdr);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: var(--ar-rail);
+  padding-inline: 1rem;
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(10px);
+  border-block: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ar-rail__heading {
+  display: none;
+}
+
+.ar-rail__list {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ar-rail__list::-webkit-scrollbar {
+  display: none;
+}
+
+.ar-rail__link {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+  text-decoration: none;
+  color: rgba(230, 227, 221, 0.55);
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  transition:
+    color var(--dur-base, 620ms) var(--ease-lux, ease),
+    border-color var(--dur-base, 620ms) var(--ease-lux, ease);
+}
+
+.ar-rail__link:hover {
+  color: var(--stone);
+}
+
+.ar-rail__link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.ar-rail__link[data-active='true'] {
+  color: var(--gold);
+  border-color: rgba(200, 162, 91, 0.45);
+}
+
+.ar-rail__dot {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  background: currentColor;
+  rotate: 45deg;
+  opacity: 0.6;
+}
+
+.ar-rail__link[data-active='true'] .ar-rail__dot {
+  opacity: 1;
+}
+
+.ar-rail__index {
+  display: none;
+}
+
+.ar-rail__years {
+  display: none;
+}
+
+.ar-rail__track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ar-rail__fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(to right, rgba(200, 162, 91, 0.35), var(--gold));
+  transform-origin: left center;
+  scale: var(--ar-progress, 0) 1;
+}
+
+@media (min-width: 1024px) {
+  .ar-rail {
+    position: fixed;
+    top: 50%;
+    left: max(2.5rem, calc((100vw - 1440px) / 2 + 2.5rem));
+    translate: 0 -50%;
+    display: block;
+    height: auto;
+    width: 8.5rem;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    border: 0;
+    transition:
+      opacity var(--dur-slow, 900ms) var(--ease-lux, ease),
+      translate var(--dur-slow, 900ms) var(--ease-lux, ease);
+  }
+
+  /* Defaults to visible so a no-JS render still gets the rail; the scroll
+     handler only ever hides it while the hero owns the screen. */
+  .ar-rail[data-engaged='false'] {
+    opacity: 0;
+    translate: -0.9rem -50%;
+    pointer-events: none;
+  }
+
+  .ar-rail__heading {
+    display: block;
+    margin-bottom: 1.35rem;
+    color: rgba(230, 227, 221, 0.32);
+  }
+
+  .ar-rail__list {
+    display: block;
+    padding-left: 1.15rem;
+    overflow: visible;
+  }
+
+  .ar-rail__item + .ar-rail__item {
+    margin-top: 1.6rem;
+  }
+
+  .ar-rail__link {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 0.55rem;
+    row-gap: 0.15rem;
+    padding: 0;
+    border: 0;
+    font-size: 0.58rem;
+    translate: 0 0;
+    transition:
+      color var(--dur-base, 620ms) var(--ease-lux, ease),
+      translate var(--dur-base, 620ms) var(--ease-lux, ease);
+  }
+
+  .ar-rail__link:hover,
+  .ar-rail__link[data-active='true'] {
+    translate: 3px 0;
+  }
+
+  .ar-rail__dot {
+    position: absolute;
+    left: -1.15rem;
+    width: 7px;
+    height: 7px;
+    margin-top: 0.3rem;
+    opacity: 1;
+    background: rgba(230, 227, 221, 0.28);
+    transition:
+      background-color var(--dur-base, 620ms) var(--ease-lux, ease),
+      scale var(--dur-base, 620ms) var(--ease-lux, ease);
+  }
+
+  .ar-rail__link[data-active='true'] .ar-rail__dot {
+    background: var(--gold);
+    scale: 1.6;
+  }
+
+  .ar-rail__index {
+    display: block;
+    grid-row: 1;
+    color: rgba(200, 162, 91, 0.65);
+  }
+
+  .ar-rail__link[data-active='true'] .ar-rail__index {
+    color: var(--gold);
+  }
+
+  .ar-rail__label {
+    grid-row: 1;
+    letter-spacing: 0.16em;
+  }
+
+  .ar-rail__years {
+    display: block;
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 0.55rem;
+    letter-spacing: 0.14em;
+    opacity: 0.5;
+  }
+
+  .ar-rail__track {
+    position: absolute;
+    left: 3px;
+    top: 2.9rem;
+    bottom: 0;
+    width: 1px;
+    height: auto;
+    background: rgba(230, 227, 221, 0.14);
+  }
+
+  .ar-rail__fill {
+    width: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(200, 162, 91, 0.3),
+      var(--gold) 88%
+    );
+    transform-origin: top center;
+    scale: 1 var(--ar-progress, 0);
+  }
+}
+
+/* Rail item needs to be the positioning context for the desktop dot. */
+.ar-rail__item {
+  position: relative;
+}
+
+/* ------------------------------------------------------------------- plates */
+.ar-plate {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: #0d0d0d;
+  cursor: pointer;
+  color: var(--stone);
+}
+
+.ar-plate img {
+  transition:
+    scale var(--dur-glacial, 1400ms) var(--ease-lux, ease),
+    filter var(--dur-slow, 900ms) var(--ease-lux, ease);
+}
+
+.ar-plate:hover img,
+.ar-plate:focus-visible img {
+  scale: 1.055;
+  filter: grayscale(0) contrast(1.03);
+}
+
+.ar-plate:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.ar-plate__veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(17, 17, 17, 0.65), transparent 55%);
+  opacity: 0;
+  transition: opacity var(--dur-base, 620ms) var(--ease-lux, ease);
+}
+
+.ar-plate:hover .ar-plate__veil,
+.ar-plate:focus-visible .ar-plate__veil {
+  opacity: 1;
+}
+
+.ar-plate__cue {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0.9rem;
+  color: var(--gold);
+  opacity: 0;
+  translate: 0 0.6rem;
+  transition:
+    opacity var(--dur-base, 620ms) var(--ease-lux, ease),
+    translate var(--dur-base, 620ms) var(--ease-lux, ease);
+}
+
+.ar-plate:hover .ar-plate__cue,
+.ar-plate:focus-visible .ar-plate__cue {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.ar-plate__caption {
+  margin-top: 0.6rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(230, 227, 221, 0.45);
+}
+
+.ar-tone-light .ar-plate__caption {
+  color: var(--steel);
+}
+
+/* ------------------------------------------------------------------ markers */
+.ar-markers {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 1.6rem;
+  list-style: none;
+}
+
+.ar-markers::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--ar-line) 8%,
+    var(--ar-line) 92%,
+    transparent
+  );
+}
+
+.ar-marker-row + .ar-marker-row {
+  margin-top: 1.15rem;
+}
+
+@media (min-width: 1024px) {
+  .ar-marker-row--offset {
+    margin-left: 4.5rem;
+  }
+}
+
+.ar-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  width: 100%;
+  padding: 1.1rem 1.15rem;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  transition:
+    background-color var(--dur-base, 620ms) var(--ease-lux, ease),
+    border-color var(--dur-base, 620ms) var(--ease-lux, ease),
+    translate var(--dur-base, 620ms) var(--ease-lux, ease);
+}
+
+.ar-marker:hover,
+.ar-marker:focus-visible {
+  background: rgba(200, 162, 91, 0.08);
+  border-color: rgba(200, 162, 91, 0.45);
+  translate: 8px 0;
+}
+
+.ar-marker img {
+  transition: scale var(--dur-glacial, 1400ms) var(--ease-lux, ease);
+}
+
+.ar-marker:hover img,
+.ar-marker:focus-visible img {
+  scale: 1.06;
+}
+
+.ar-marker:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.ar-marker__pin {
+  position: absolute;
+  left: calc(-1.6rem + 1px);
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  translate: -50% -50%;
+  rotate: 45deg;
+  background: var(--onyx-deep);
+  border: 1px solid var(--gold);
+  transition:
+    background-color var(--dur-base, 620ms) var(--ease-lux, ease),
+    scale var(--dur-base, 620ms) var(--ease-lux, ease);
+}
+
+.ar-marker:hover .ar-marker__pin,
+.ar-marker:focus-visible .ar-marker__pin {
+  scale: 1.25;
+}
+
+.ar-marker:hover .ar-marker__pin,
+.ar-marker:focus-visible .ar-marker__pin {
+  background: var(--gold);
+}
+
+.ar-marker__thumb {
+  position: relative;
+  display: none;
+  flex: none;
+  width: 92px;
+  height: 68px;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+@media (min-width: 640px) {
+  .ar-marker__thumb {
+    display: block;
+  }
+}
+
+.ar-marker__text {
+  display: block;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ar-marker__label {
+  display: block;
+  color: rgba(200, 162, 91, 0.85);
+}
+
+.ar-marker__title {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: clamp(1.05rem, 2.2vw, 1.6rem);
+}
+
+.ar-marker__result {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: rgba(230, 227, 221, 0.6);
+}
+
+.ar-marker__cue {
+  flex: none;
+  align-self: flex-end;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  color: rgba(200, 162, 91, 0.75);
+}
+
+/* --------------------------------------------------------------- record list */
+.ar-records {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ar-records li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(230, 227, 221, 0.72);
+}
+
+.ar-records li::before {
+  content: '';
+  flex: none;
+  width: 5px;
+  height: 11px;
+  translate: 0 1px;
+  background: var(--gold);
+  transform: skewX(-30deg);
+}
+
+.ar-tone-light .ar-records li {
+  border-top-color: rgba(26, 26, 26, 0.12);
+  color: rgba(26, 26, 26, 0.72);
+}
+
+/* ------------------------------------------------------------------- ledger */
+.ar-ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.ar-ledger caption {
+  text-align: left;
+  padding-bottom: 0.9rem;
+  color: rgba(230, 227, 221, 0.45);
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.ar-ledger th,
+.ar-ledger td {
+  padding: 0.85rem 0.75rem 0.85rem 0;
+  text-align: left;
+  vertical-align: top;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ar-ledger thead th {
+  border-top: 0;
+  padding-top: 0;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(200, 162, 91, 0.8);
+}
+
+.ar-ledger tbody th {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--stone);
+  white-space: nowrap;
+}
+
+.ar-ledger td {
+  color: rgba(230, 227, 221, 0.65);
+  line-height: 1.55;
+}
+
+.ar-ledger tr[data-peak='true'] th,
+.ar-ledger tr[data-peak='true'] td {
+  color: var(--gold);
+  background: rgba(200, 162, 91, 0.07);
+}
+
+/* ---------------------------------------------------------------- case file */
+.ar-file {
+  border: 1px solid rgba(200, 162, 91, 0.35);
+  background:
+    linear-gradient(rgba(200, 162, 91, 0.04), rgba(200, 162, 91, 0.04)),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(200, 162, 91, 0.05) 0 2px,
+      transparent 2px 14px
+    );
+}
+
+.ar-file__row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.75rem;
+  padding-block: 0.7rem;
+  border-top: 1px solid rgba(200, 162, 91, 0.2);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 479px) {
+  .ar-file__row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
+.ar-file__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ar-file__pulse {
+  width: 7px;
+  height: 7px;
+  background: var(--gold);
+  rotate: 45deg;
+}
+
+/* ------------------------------------------------------------------ lightbox */
+.ar-dialog {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--stone);
+  overflow: hidden;
+}
+
+.ar-dialog::backdrop {
+  background: rgba(9, 9, 9, 0.9);
+  backdrop-filter: blur(8px);
+}
+
+.ar-dialog__inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .ar-dialog__inner {
+    padding: 1.5rem 2.5rem 2rem;
+  }
+}
+
+.ar-dialog__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex: none;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.ar-dialog__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ar-dialog__count {
+  margin-right: 0.35rem;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  color: rgba(230, 227, 221, 0.5);
+}
+
+.ar-dialog__step,
+.ar-dialog__close {
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  color: var(--stone);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition:
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.ar-dialog__step:hover,
+.ar-dialog__close:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.ar-dialog__step:focus-visible,
+.ar-dialog__close:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.ar-dialog__body {
+  display: grid;
+  gap: 1.25rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-block: 1.25rem;
+  overflow-y: auto;
+}
+
+@media (min-width: 1024px) {
+  .ar-dialog__body {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: center;
+    overflow: hidden;
+  }
+}
+
+.ar-dialog__figure {
+  margin: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0d0d;
+}
+
+.ar-dialog__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 58dvh;
+  object-fit: contain;
+}
+
+@media (min-width: 1024px) {
+  .ar-dialog__img {
+    max-height: 72dvh;
+  }
+}
+
+.ar-dialog__meta {
+  min-width: 0;
+}
+
+.ar-dialog__result {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(200, 162, 91, 0.4);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--gold);
+}
+
+.ar-dialog__hint {
+  flex: none;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(230, 227, 221, 0.32);
+}
+
+@media (max-width: 767px) {
+  .ar-dialog__hint {
+    display: none;
+  }
+}
+
+/* ===========================================================================
+   MOTION — everything below is progressive enhancement only.
+   ========================================================================= */
+
+@keyframes ar-bg-drift {
+  from {
+    scale: 1.14;
+    translate: 0 -2.5%;
+  }
+  to {
+    scale: 1.02;
+    translate: 0 2.5%;
+  }
+}
+
+/* Uses `transform` rather than the `translate` property on purpose: the ghost
+   elements are centred with Tailwind's translate utilities, which own
+   `translate`, and the two must compose instead of clobbering each other. */
+@keyframes ar-ghost-drift {
+  from {
+    transform: translateY(4.5rem);
+  }
+  to {
+    transform: translateY(-4.5rem);
+  }
+}
+
+@keyframes ar-hero-sink {
+  from {
+    opacity: 1;
+    translate: 0 0;
+  }
+  to {
+    opacity: 0.15;
+    translate: 0 -5rem;
+  }
+}
+
+@keyframes ar-hero-bg {
+  from {
+    scale: 1.02;
+  }
+  to {
+    scale: 1.18;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* Named timelines let layers *inside* a pinned stage animate against the
+       scene's own scroll span — a sticky element's own view() never advances. */
+    .ar-root {
+      timeline-scope: --ar-hero, --ar-s1, --ar-s2, --ar-s3, --ar-s4;
+    }
+
+    .ar-hero {
+      view-timeline: --ar-hero block;
+    }
+
+    .ar-scene[data-scene='1'] {
+      view-timeline: --ar-s1 block;
+    }
+    .ar-scene[data-scene='2'] {
+      view-timeline: --ar-s2 block;
+    }
+    .ar-scene[data-scene='3'] {
+      view-timeline: --ar-s3 block;
+    }
+    .ar-scene[data-scene='4'] {
+      view-timeline: --ar-s4 block;
+    }
+
+    /* Shorthands first (low specificity) — the animation shorthand resets
+       animation-timeline, so the longhands must win, which they do on
+       specificity below. */
+    .ar-parallax {
+      animation: ar-bg-drift linear both;
+      animation-range: cover 0% cover 100%;
+      will-change: transform;
+    }
+
+    .ar-ghost-drift {
+      animation: ar-ghost-drift linear both;
+      animation-range: cover 0% cover 100%;
+      will-change: transform;
+    }
+
+    .ar-hero__bg {
+      animation: ar-hero-bg linear both;
+      animation-range: cover 0% cover 100%;
+    }
+
+    /* The hero sits at the very top of the document, so its `cover` timeline is
+       already ~39% elapsed on first paint (the viewport height is part of the
+       range). Starting the fade at 45% keeps the masthead at full strength
+       until the reader actually scrolls. */
+    .ar-hero__fore {
+      animation: ar-hero-sink linear both;
+      animation-range: cover 45% cover 88%;
+    }
+
+    .ar-scene[data-scene='1'] .ar-parallax,
+    .ar-scene[data-scene='1'] .ar-ghost-drift {
+      animation-timeline: --ar-s1;
+    }
+    .ar-scene[data-scene='2'] .ar-parallax,
+    .ar-scene[data-scene='2'] .ar-ghost-drift {
+      animation-timeline: --ar-s2;
+    }
+    .ar-scene[data-scene='3'] .ar-parallax,
+    .ar-scene[data-scene='3'] .ar-ghost-drift {
+      animation-timeline: --ar-s3;
+    }
+    .ar-scene[data-scene='4'] .ar-parallax,
+    .ar-scene[data-scene='4'] .ar-ghost-drift {
+      animation-timeline: --ar-s4;
+    }
+
+    .ar-hero .ar-hero__bg,
+    .ar-hero .ar-hero__fore {
+      animation-timeline: --ar-hero;
+    }
+  }
+
+  /* Safari / Firefox path: the same two layers, driven off the --ar-p progress
+     value that Scene.tsx publishes on each scene (and only publishes when this
+     branch is the live one). 0.5 is the resting mid-scene value, so a missing
+     variable is simply the undisturbed composition. */
+  @supports not (animation-timeline: view()) {
+    .ar-parallax {
+      transform: scale(calc(1.14 - 0.12 * var(--ar-p, 0.5)))
+        translateY(calc((var(--ar-p, 0.5) - 0.5) * 5%));
+    }
+
+    .ar-ghost-drift {
+      transform: translateY(calc((0.5 - var(--ar-p, 0.5)) * 9rem));
+    }
+
+    .ar-hero__bg {
+      transform: scale(calc(1.02 + 0.16 * var(--ar-p, 0)));
+    }
+  }
+
+  /* Lightbox enter/exit in the top layer — no library required. The inner
+     panel lags the backdrop slightly, which is what makes it feel considered
+     rather than snapped open. */
+  .ar-dialog {
+    opacity: 0;
+    translate: 0 1.75rem;
+    scale: 0.985;
+    transition:
+      opacity 380ms var(--ease-lux, ease),
+      translate 620ms var(--ease-lux, ease),
+      scale 620ms var(--ease-lux, ease),
+      display 620ms allow-discrete,
+      overlay 620ms allow-discrete;
+  }
+
+  .ar-dialog[open] {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+
+  @starting-style {
+    .ar-dialog[open] {
+      opacity: 0;
+      translate: 0 1.75rem;
+      scale: 0.985;
+    }
+  }
+
+  .ar-dialog::backdrop {
+    opacity: 0;
+    transition:
+      opacity 420ms var(--ease-lux, ease),
+      display 420ms allow-discrete,
+      overlay 420ms allow-discrete;
+  }
+
+  .ar-dialog[open]::backdrop {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .ar-dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  /* Stepping through the archive cross-fades the plate rather than snapping —
+     the <Img> is keyed on the photo id, so each one is a fresh mount. */
+  .ar-dialog__img {
+    animation: ar-plate-in 620ms var(--ease-lux, ease) both;
+  }
+
+  @keyframes ar-plate-in {
+    from {
+      opacity: 0;
+      scale: 1.015;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+
+  .ar-scroll-cue {
+    animation: ar-cue 2.4s ease-in-out infinite;
+  }
+
+  @keyframes ar-cue {
+    0%,
+    100% {
+      translate: 0 0;
+      opacity: 0.5;
+    }
+    50% {
+      translate: 0 8px;
+      opacity: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ar-plate img,
+  .ar-marker,
+  .ar-marker img,
+  .ar-marker__pin,
+  .ar-rail,
+  .ar-rail__link,
+  .ar-rail__dot,
+  .ar-plate__veil,
+  .ar-plate__cue,
+  .ar-dialog,
+  .ar-dialog::backdrop {
+    transition: none;
+  }
+
+  .ar-marker:hover,
+  .ar-marker:focus-visible {
+    translate: 0 0;
+  }
+
+  .ar-marker:hover img,
+  .ar-marker:focus-visible img,
+  .ar-marker:hover .ar-marker__pin,
+  .ar-marker:focus-visible .ar-marker__pin,
+  .ar-plate:hover img,
+  .ar-plate:focus-visible img {
+    scale: 1;
+  }
+
+  .ar-plate__veil,
+  .ar-plate__cue {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .ar-scroll-cue,
+  .ar-dialog__img {
+    animation: none;
+  }
+
+  /* No scroll-linked layer offsets at all — the composition rests. */
+  .ar-parallax,
+  .ar-ghost-drift,
+  .ar-hero__bg {
+    transform: none;
+    animation: none;
+  }
+}
+
+/* ===========================================================================
+   PHONES — the roadmap told straight.
+   Pinned stages, negative flow offsets and full-height title screens are a
+   desktop conceit; at this width they fight the browser chrome and the swipe.
+   Below 768px every scene collapses into an honest vertical narrative: a
+   banner photograph, then its title card, then the chapter. Same content,
+   same order, no pinning to break.
+   ========================================================================= */
+@media (max-width: 767px) {
+  .ar-hero {
+    height: auto;
+  }
+
+  .ar-hero__stage {
+    position: relative;
+    top: auto;
+    height: 86svh;
+    min-height: 30rem;
+  }
+
+  .ar-stage {
+    position: relative;
+    top: auto;
+    height: 54svh;
+    min-height: 19rem;
+  }
+
+  .ar-flow {
+    margin-top: 0;
+  }
+
+  .ar-flow > :not(.ar-title-screen) {
+    box-shadow: none;
+  }
+
+  /* The title card now sits on solid ground, not on the photograph. */
+  .ar-title-screen {
+    min-height: 0;
+    padding-block: 3.25rem 3rem;
+  }
+
+  .ar-title-screen[data-tone='dark'] {
+    background: var(--onyx-deep);
+  }
+
+  .ar-title-screen[data-tone='light'] {
+    background: var(--stone-warm);
+  }
+
+  /* One reading axis on a phone — no right/centre alignment games. */
+  .ar-title-screen .ar-title-screen__inner {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .ar-title-screen__title {
+    margin-top: 1.1rem;
+  }
+
+  .ar-title-screen__years {
+    margin-top: 1.1rem;
+  }
+
+  .ar-title-screen__standfirst {
+    margin-top: 1.4rem;
+  }
+
+  /* Ghost type is a banner accent here, not a full-bleed midground. */
+  .ar-ghost {
+    opacity: 0.85;
+  }
+
+  .ar-marker {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .ar-marker__cue {
+    align-self: center;
+  }
+}

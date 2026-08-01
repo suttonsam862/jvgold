@@ -1,0 +1,818 @@
+@import 'tailwindcss';
+
+/*
+ * Two brand systems live here.
+ * JV GOLD  — Jesse's personal brand: gold on onyx/stone, Bai Jamjuree.
+ * FCWC     — Future Champions nonprofit: champion green on void, Barlow Condensed.
+ * They share a page only at the handoff moment on the Future Champions route.
+ */
+:root {
+  /* JV GOLD */
+  --gold: #c8a25b;
+  --gold-deep: #a8853f;
+  --onyx: #1a1a1a;
+  --onyx-deep: #111111;
+  --stone: #e6e3dd;
+  --stone-warm: #efece6;
+  --steel: #6b6b6b;
+
+  /* FUTURE CHAMPIONS */
+  --fc-green: #00dc7f;
+  --fc-void: #111111;
+  --fc-ink: #000000;
+  --fc-chalk: #f4f4f4;
+  --fc-red: #f0282d;
+  --fc-blue: #5b57cc;
+
+  /* MOTION TOKENS — one vocabulary for every animation on the site.
+     Everything expensive-feeling is slow and decelerating; nothing bounces. */
+  --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-lux-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-lux-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 320ms;
+  --dur-base: 620ms;
+  --dur-slow: 900ms;
+  --dur-glacial: 1400ms;
+
+  /* reveal geometry */
+  --reveal-distance: 34px;
+  --reveal-duration: 860ms;
+}
+
+@theme inline {
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-onyx: var(--onyx);
+  --color-onyx-deep: var(--onyx-deep);
+  --color-stone: var(--stone);
+  --color-stone-warm: var(--stone-warm);
+  --color-steel: var(--steel);
+
+  --color-fc-green: var(--fc-green);
+  --color-fc-void: var(--fc-void);
+  --color-fc-ink: var(--fc-ink);
+  --color-fc-chalk: var(--fc-chalk);
+  --color-fc-red: var(--fc-red);
+  --color-fc-blue: var(--fc-blue);
+
+  --font-display: 'Bai Jamjuree', system-ui, sans-serif;
+  --font-sans: 'Raleway', system-ui, sans-serif;
+  --font-fc-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-fc-body: 'Source Sans 3', system-ui, sans-serif;
+}
+
+body {
+  background: var(--stone);
+  color: var(--onyx);
+  font-family: 'Raleway', system-ui, sans-serif;
+}
+
+/* reset.css gutters the main element; this site is full-bleed. */
+body > main {
+  margin: 0;
+  width: 100%;
+}
+
+/* Selection: warm gold wash rather than a solid slab, so highlighted text
+   stays readable on both stone and onyx. */
+::selection {
+  background: color-mix(in srgb, var(--gold) 82%, transparent);
+  color: var(--onyx-deep);
+  text-shadow: none;
+}
+::-moz-selection {
+  background: color-mix(in srgb, var(--gold) 82%, transparent);
+  color: var(--onyx-deep);
+}
+
+/* ---------- JV GOLD type ---------- */
+.display {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+
+.tag {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.tag::before {
+  content: '[\00a0';
+}
+.tag::after {
+  content: '\00a0]';
+}
+
+.outline-type {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--gold);
+}
+
+/* ---------- FUTURE CHAMPIONS type ---------- */
+.fc-display {
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+.fc-label {
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+}
+.fc-body {
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+  line-height: 1.6;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- shared utilities ---------- */
+.img-mono {
+  filter: grayscale(1) contrast(1.08) brightness(0.98);
+}
+.img-mono-hover {
+  transition: filter 0.5s ease;
+}
+.img-mono-hover:hover {
+  filter: grayscale(0) contrast(1.02);
+}
+.rule {
+  border-color: color-mix(in srgb, var(--onyx) 15%, transparent);
+}
+.rule-light {
+  border-color: color-mix(in srgb, #ffffff 18%, transparent);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ---------- commerce drawer (Aside) ----------
+   Ported from the Hydrogen starter's app.css, restyled for JV Gold. Without
+   these the cart drawer renders inline in the page instead of off-canvas. */
+:root {
+  --aside-width: 420px;
+}
+
+@media (max-width: 45em) {
+  html:has(.overlay.expanded) {
+    overflow: hidden;
+  }
+}
+
+aside {
+  background: var(--stone);
+  color: var(--onyx);
+  box-shadow: 0 0 60px rgb(0 0 0 / 0.35);
+  height: 100dvh;
+  width: min(var(--aside-width), 100vw);
+  position: fixed;
+  right: calc(-1 * var(--aside-width));
+  top: 0;
+  transition: transform 260ms ease-in-out;
+  z-index: 11;
+}
+
+aside header {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--onyx) 15%, transparent);
+  display: flex;
+  height: 4rem;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+}
+
+aside header h3 {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+aside header .close {
+  font-weight: 700;
+  opacity: 0.7;
+  text-decoration: none;
+  transition: opacity 200ms;
+}
+aside header .close:hover {
+  opacity: 1;
+}
+
+aside main {
+  margin: 1.25rem;
+}
+
+.overlay {
+  background: rgb(17 17 17 / 0.45);
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  transition: opacity 320ms ease-in-out;
+  visibility: hidden;
+  z-index: 10;
+}
+
+.overlay .close-outside {
+  background: transparent;
+  border: none;
+  color: transparent;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: calc(100% - var(--aside-width));
+}
+
+.overlay .cancel {
+  cursor: default;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.overlay.expanded {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.overlay.expanded aside {
+  transform: translateX(calc(var(--aside-width) * -1));
+}
+
+button.reset {
+  border: 0;
+  background: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ---------- editorial type scale ----------
+   Optional companions to .display. Tracking tightens as the size grows, the
+   way a type designer would set it optically: big words want negative
+   tracking, small caps-y words want a little air. Use alongside .display:
+   <h1 className="display display-hero">. */
+.display-hero {
+  font-size: clamp(3.25rem, 11.5vw, 12rem);
+  letter-spacing: -0.045em;
+  line-height: 0.84;
+}
+.display-xl {
+  font-size: clamp(2.75rem, 8vw, 7.5rem);
+  letter-spacing: -0.038em;
+  line-height: 0.86;
+}
+.display-lg {
+  font-size: clamp(2.25rem, 5.5vw, 4.75rem);
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+.display-md {
+  font-size: clamp(1.75rem, 3.6vw, 3rem);
+  letter-spacing: -0.022em;
+  line-height: 0.95;
+}
+.display-sm {
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  letter-spacing: -0.012em;
+  line-height: 1.05;
+}
+.display-xs {
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+
+/* Large intro paragraph. One per section, max. */
+.lede {
+  font-family: 'Raleway', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: clamp(1.125rem, 1.9vw, 1.625rem);
+  line-height: 1.5;
+  letter-spacing: -0.008em;
+  max-width: 34ch;
+  text-wrap: pretty;
+}
+.lede-wide {
+  max-width: 52ch;
+}
+/* Balanced headline wrapping — stops orphan words in big display type. */
+.balance {
+  text-wrap: balance;
+}
+
+/* ---------- premium imagery + link states ----------
+   .media is the frame: it clips, and its child image is what moves.
+   <figure class="media media-zoom media-wash"><Img ... /></figure> */
+.media {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.media-zoom img,
+.media-zoom .media-inner {
+  transform: scale(1.001);
+  transition: transform var(--dur-glacial) var(--ease-lux);
+  will-change: transform;
+}
+.media-zoom:hover img,
+.media-zoom:focus-within img,
+.media-zoom:hover .media-inner,
+.media-zoom:focus-within .media-inner {
+  transform: scale(1.06);
+}
+/* Gold wash — a breath of warmth over the mono photography, never a tint bomb. */
+.media-wash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--gold) 30%, transparent) 0%,
+    color-mix(in srgb, var(--gold-deep) 12%, transparent) 55%,
+    transparent 100%
+  );
+  mix-blend-mode: soft-light;
+  transition: opacity var(--dur-slow) var(--ease-lux);
+}
+.media-wash:hover::after,
+.media-wash:focus-within::after {
+  opacity: 1;
+}
+/* Scrim for type laid over photography. */
+.media-scrim::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgb(17 17 17 / 0.72) 0%,
+    rgb(17 17 17 / 0.28) 45%,
+    rgb(17 17 17 / 0) 78%
+  );
+}
+/* Slow desaturation release, richer than .img-mono-hover. */
+.img-reveal-color {
+  filter: grayscale(1) contrast(1.08) brightness(0.98);
+  transition: filter var(--dur-glacial) var(--ease-lux);
+}
+.media:hover .img-reveal-color,
+.media:focus-within .img-reveal-color,
+.img-reveal-color:hover {
+  filter: grayscale(0) contrast(1.02);
+}
+
+/* Animated gold underline that wipes in from the left. */
+.link-line {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+  padding-bottom: 0.12em;
+}
+.link-line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur-base) var(--ease-lux);
+}
+.link-line:hover::after,
+.link-line:focus-visible::after,
+.link-line[aria-current='page']::after {
+  transform: scaleX(1);
+}
+/* Gold variant: line arrives in gold regardless of text colour. */
+.link-line-gold::after {
+  background: var(--gold);
+  height: 1.5px;
+}
+/* Underline already present that wipes out and back in — for nav items. */
+.link-line-swap::after {
+  transform: scaleX(1);
+}
+.link-line-swap:hover::after,
+.link-line-swap:focus-visible::after {
+  animation: jv-line-swap var(--dur-base) var(--ease-lux-io) both;
+}
+@keyframes jv-line-swap {
+  0% {
+    transform: scaleX(1);
+    transform-origin: right center;
+  }
+  49.9% {
+    transform: scaleX(0);
+    transform-origin: right center;
+  }
+  50% {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+/* Ghost button / pill with a gold fill that rises from the baseline. */
+.btn-wipe {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: color var(--dur-base) var(--ease-lux);
+}
+.btn-wipe::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--gold);
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  transition: transform var(--dur-base) var(--ease-lux);
+}
+.btn-wipe:hover,
+.btn-wipe:focus-visible {
+  color: var(--onyx-deep);
+}
+.btn-wipe:hover::before,
+.btn-wipe:focus-visible::before {
+  transform: scaleY(1);
+}
+
+/* ---------- focus ----------
+   One ring everywhere: gold, offset, never clipped by overflow frames. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+.on-dark :focus-visible,
+.bg-onyx :focus-visible,
+.bg-onyx-deep :focus-visible {
+  outline-color: var(--gold);
+}
+/* Keyboard users get the ring even on elements whose frame clips. */
+.media:focus-within {
+  outline: 2px solid transparent;
+}
+.media:has(:focus-visible) {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* ---------- refined scrollbar on dark surfaces ----------
+   Opt-in via .scroll-dark on a scrolling container. Track stays visible and
+   the thumb keeps a real hit area, so usability is untouched. */
+.scroll-dark {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--gold) 55%, transparent)
+    color-mix(in srgb, #ffffff 8%, transparent);
+}
+.scroll-dark::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-dark::-webkit-scrollbar-track {
+  background: color-mix(in srgb, #ffffff 6%, transparent);
+}
+.scroll-dark::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--gold) 50%, transparent);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+}
+.scroll-dark::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+  background-clip: content-box;
+}
+/* Horizontal editorial rails: hide the bar but keep keyboard + wheel scroll. */
+.rail-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+}
+.rail-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- motion ---------- */
+/* Reveal-on-scroll. Elements start hidden only when JS is available, so
+   no-JS and reduced-motion users always see final state.
+
+   Contract (unchanged): add data-reveal to any element; the observer in
+   Reveal.tsx adds .is-visible. Stagger with --reveal-delay.
+   Opt-in variants: data-reveal="fade | rise | scale | mask | left | right". */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--reveal-distance));
+  transition:
+    opacity var(--reveal-duration) var(--ease-lux),
+    transform var(--reveal-duration) var(--ease-lux),
+    clip-path var(--reveal-duration) var(--ease-lux);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.js [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+  clip-path: none;
+}
+
+/* fade — presence only, no travel. For type sitting over photography. */
+.js [data-reveal='fade'] {
+  transform: none;
+  --reveal-duration: 1100ms;
+}
+/* rise — the house default, with a touch more travel. */
+.js [data-reveal='rise'] {
+  --reveal-distance: 48px;
+}
+/* scale — for imagery: settles down out of a slow push-in. */
+.js [data-reveal='scale'] {
+  transform: translateY(18px) scale(1.045);
+  --reveal-duration: 1200ms;
+}
+/* mask — a clip-path wipe: the element is uncovered from the bottom edge up. */
+.js [data-reveal='mask'] {
+  transform: translateY(14px);
+  clip-path: inset(0 0 100% 0);
+  --reveal-duration: 1100ms;
+}
+/* lateral entrances for asymmetric, off-axis layouts. */
+.js [data-reveal='left'] {
+  transform: translateX(calc(var(--reveal-distance) * -1.4));
+}
+.js [data-reveal='right'] {
+  transform: translateX(calc(var(--reveal-distance) * 1.4));
+}
+
+/* Auto-stagger for lists: put data-reveal-group on the parent and data-reveal
+   on each child; no inline delay variables needed. */
+[data-reveal-group] > * {
+  --reveal-delay: calc(var(--reveal-step, 90ms) * var(--i, 0));
+}
+[data-reveal-group] > *:nth-child(1) {
+  --i: 0;
+}
+[data-reveal-group] > *:nth-child(2) {
+  --i: 1;
+}
+[data-reveal-group] > *:nth-child(3) {
+  --i: 2;
+}
+[data-reveal-group] > *:nth-child(4) {
+  --i: 3;
+}
+[data-reveal-group] > *:nth-child(5) {
+  --i: 4;
+}
+[data-reveal-group] > *:nth-child(6) {
+  --i: 5;
+}
+[data-reveal-group] > *:nth-child(7) {
+  --i: 6;
+}
+[data-reveal-group] > *:nth-child(8) {
+  --i: 7;
+}
+[data-reveal-group] > *:nth-child(n + 9) {
+  --i: 8;
+}
+
+/* Word/line-level entrance for headlines that are split into spans by markup:
+   <h2 class="display reveal-lines"><span>ONE</span><span>TWO</span></h2> */
+.reveal-lines > span {
+  display: block;
+  overflow: hidden;
+}
+.js [data-reveal].reveal-lines {
+  opacity: 1;
+  transform: none;
+}
+.js [data-reveal].reveal-lines > span > * {
+  display: block;
+  transform: translateY(105%);
+  transition: transform var(--dur-slow) var(--ease-lux);
+  transition-delay: calc(var(--reveal-delay, 0ms) + var(--line-delay, 0ms));
+}
+.js [data-reveal].reveal-lines.is-visible > span > * {
+  transform: none;
+}
+.js [data-reveal].reveal-lines > span:nth-child(2) > * {
+  --line-delay: 90ms;
+}
+.js [data-reveal].reveal-lines > span:nth-child(3) > * {
+  --line-delay: 180ms;
+}
+.js [data-reveal].reveal-lines > span:nth-child(4) > * {
+  --line-delay: 270ms;
+}
+
+/* Ambient drift for hero art, driven by the useParallax hook (which only sets
+   --parallax; the transform lives here so reduced motion can kill it). */
+.parallax-layer {
+  transform: translate3d(0, calc(var(--parallax, 0) * 1px), 0);
+  will-change: transform;
+}
+
+/* Hairline that draws itself in. */
+.rule-draw {
+  transform-origin: left center;
+}
+.js [data-reveal].rule-draw {
+  opacity: 1;
+  transform: scaleX(0);
+  transition: transform var(--dur-glacial) var(--ease-lux);
+}
+.js [data-reveal].rule-draw.is-visible {
+  transform: scaleX(1);
+}
+
+/* ---------- progressive enhancement: native scroll-driven reveals ----------
+   Where the browser supports view() timelines the reveal is linked to the
+   element's own progress through the viewport, which reads far smoother than
+   a fired transition. The IntersectionObserver path above stays the fallback
+   and the .is-visible contract is untouched.
+
+   Base styles here are the FINISHED state, so if a timeline is ever inactive
+   (fixed/sticky elements, no scrollport) the content is visible, never stuck
+   hidden. Opt any element out with data-reveal-mode="observer". */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .js [data-reveal]:not([data-reveal-mode='observer']):not(.reveal-lines) {
+      opacity: 1;
+      transform: none;
+      clip-path: none;
+      transition: none;
+      animation: jv-view-rise both linear;
+      animation-timeline: view();
+      animation-range: entry 6% entry 92%;
+    }
+    .js [data-reveal='fade']:not([data-reveal-mode='observer']) {
+      animation-name: jv-view-fade;
+    }
+    .js [data-reveal='scale']:not([data-reveal-mode='observer']) {
+      animation-name: jv-view-scale;
+    }
+    .js [data-reveal='mask']:not([data-reveal-mode='observer']) {
+      animation-name: jv-view-mask;
+    }
+    .js [data-reveal='left']:not([data-reveal-mode='observer']) {
+      animation-name: jv-view-left;
+    }
+    .js [data-reveal='right']:not([data-reveal-mode='observer']) {
+      animation-name: jv-view-right;
+    }
+    .js [data-reveal].rule-draw:not([data-reveal-mode='observer']) {
+      animation-name: jv-view-draw;
+    }
+  }
+}
+@keyframes jv-view-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes jv-view-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes jv-view-scale {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(1.045);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes jv-view-mask {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+}
+@keyframes jv-view-left {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--reveal-distance) * -1.4));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes jv-view-right {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--reveal-distance) * 1.4));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes jv-view-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ---------- reduced motion: everything above is switched off ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    transition: none;
+    animation: none;
+  }
+  .js [data-reveal].reveal-lines > span > *,
+  .js [data-reveal].rule-draw {
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+  .media-zoom img,
+  .media-zoom .media-inner,
+  .media-zoom:hover img,
+  .media-zoom:focus-within img,
+  .parallax-layer {
+    transform: none !important;
+  }
+  .link-line::after,
+  .btn-wipe::before {
+    transition: none;
+  }
+  .link-line-swap:hover::after,
+  .link-line-swap:focus-visible::after {
+    animation: none;
+    transform: scaleX(1);
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,13 +1,18 @@
-import {useLoaderData} from 'react-router';
+import {useLoaderData, Link} from 'react-router';
 import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
+import styles from '~/styles/commerce.css?url';
+
+export function links() {
+  return [{rel: 'stylesheet', href: styles}];
+}
 
 /**
  * @type {Route.MetaFunction}
  */
 export const meta = () => {
-  return [{title: `Hydrogen | Products`}];
+  return [{title: `Everything — JV GOLD`}];
 };
 
 /**
@@ -58,21 +63,41 @@ export default function Collection() {
   const {products} = useLoaderData();
 
   return (
-    <div className="collection">
-      <h1>Products</h1>
+    <section className="mx-auto max-w-[1440px] px-5 pt-16 pb-28 md:px-10 md:pt-24 md:pb-36">
+      <div className="mb-16 grid gap-8 border-b rule pb-10 md:mb-24 md:grid-cols-[1.1fr_0.9fr] md:items-end md:gap-16">
+        <div>
+          <Link
+            to="/collections"
+            prefetch="intent"
+            className="tag text-steel transition-colors duration-500 hover:text-gold-deep"
+          >
+            THE SHOP
+          </Link>
+          <h1 className="display mt-4 text-[clamp(2.6rem,7.5vw,6rem)]">
+            Ev<span className="text-gold-deep">e</span>rything
+          </h1>
+        </div>
+        <p className="max-w-md leading-relaxed text-onyx/70 md:justify-self-end">
+          The full catalogue, in one place. Cut in small runs and built to be
+          worn hard &mdash; when a size is gone, it is gone.
+        </p>
+      </div>
+
       <PaginatedResourceSection
         connection={products}
-        resourcesClassName="products-grid"
+        ariaLabel="All products"
+        resourcesClassName="grid grid-cols-2 gap-x-6 gap-y-14 md:gap-x-10 md:gap-y-20 lg:grid-cols-3 lg:gap-x-12"
       >
         {({node: product, index}) => (
           <ProductItem
             key={product.id}
             product={product}
+            index={index}
             loading={index < 8 ? 'eager' : undefined}
           />
         )}
       </PaginatedResourceSection>
-    </div>
+    </section>
   );
 }
 

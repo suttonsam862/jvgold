@@ -1,0 +1,438 @@
+/* ===========================================================================
+   JV GOLD — HOMEPAGE
+   Route-scoped styles. Tailwind utilities do the ordinary layout work in the
+   JSX; this file holds the layered machinery: hero parallax, the engraved
+   credibility plate and its mobile marquee, the manifesto overlap, and the
+   venture hover choreography.
+
+   Motion rules honoured here:
+   - every resting state is the *visible* state, so SSR / no-JS / unsupported
+     browsers see finished, readable content;
+   - JS only ever writes a 0..1 progress custom property; if it never runs the
+     property falls back to 0 and nothing looks broken;
+   - only transform / opacity / filter are animated;
+   - everything is neutralised under prefers-reduced-motion: reduce.
+   ========================================================================= */
+
+.hm {
+  --hm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hm-hair: rgba(200, 162, 91, 0.45);
+}
+
+/* ----------------------------------------------------------------- hero */
+
+.hm-hero {
+  --p: 0;
+}
+
+/* The media plate is oversized so the parallax drift never exposes an edge. */
+.hm-hero-media {
+  position: absolute;
+  inset: -12% 0 -12% 0;
+  transform: translate3d(0, calc(var(--p) * -9%), 0)
+    scale(calc(1 + var(--p) * 0.07));
+  transform-origin: 50% 40%;
+  will-change: transform;
+}
+
+/* A slow, standalone push-in on load so the frame is never quite static. */
+@media (prefers-reduced-motion: no-preference) {
+  .hm-hero-media img {
+    animation: hm-drift 2600ms var(--hm-ease) both;
+  }
+}
+
+@keyframes hm-drift {
+  from {
+    transform: scale(1.08);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Vertical grain: a barely-there gold seam down the left gutter. */
+.hm-hero-seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--hm-hair) 30%,
+    var(--hm-hair) 70%,
+    transparent
+  );
+  opacity: 0.7;
+}
+
+/* Masked line entrance. Resting state is visible; the animation supplies the
+   hidden start only when motion is allowed. */
+.hm-rise {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hm-rise > * {
+    display: block;
+    animation: hm-rise-in 1100ms var(--hm-ease) both;
+    animation-delay: var(--hm-delay, 0ms);
+  }
+}
+
+@keyframes hm-rise-in {
+  from {
+    transform: translate3d(0, 110%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hm-fade {
+    animation: hm-fade-in 900ms var(--hm-ease) both;
+    animation-delay: var(--hm-delay, 0ms);
+  }
+}
+
+@keyframes hm-fade-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Scroll cue — a hairline with a gold bead travelling down it. */
+.hm-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hm-cue-rail {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 54px;
+  background: rgba(230, 227, 221, 0.28);
+  overflow: hidden;
+}
+
+.hm-cue-rail::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 18px;
+  background: var(--gold);
+  transform: translate3d(0, -18px, 0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hm-cue-rail::after {
+    animation: hm-bead 2400ms var(--hm-ease) infinite;
+  }
+}
+
+@keyframes hm-bead {
+  0% {
+    transform: translate3d(0, -20px, 0);
+  }
+  60%,
+  100% {
+    transform: translate3d(0, 56px, 0);
+  }
+}
+
+/* ------------------------------------------------------- credibility plate */
+
+.hm-plate {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.5),
+      rgba(0, 0, 0, 0.035)
+    ),
+    var(--stone-warm);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.hm-plate-item {
+  position: relative;
+  white-space: nowrap;
+}
+
+/* Engraved separator between items on the wide layout. */
+.hm-plate-row > .hm-plate-item + .hm-plate-item::before {
+  content: '';
+  position: absolute;
+  left: -1.6rem;
+  top: 50%;
+  width: 1px;
+  height: 0.85em;
+  transform: translateY(-50%) skewX(-30deg);
+  background: color-mix(in srgb, var(--onyx) 22%, transparent);
+}
+
+/* Mobile marquee. The track holds the list twice; the copy is aria-hidden. */
+.hm-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 8%,
+    #000 92%,
+    transparent
+  );
+}
+
+.hm-marquee-track {
+  display: flex;
+  width: max-content;
+}
+
+.hm-marquee-set {
+  display: flex;
+  gap: 2.75rem;
+  padding-right: 2.75rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hm-marquee-track {
+    animation: hm-slide 34s linear infinite;
+  }
+  .hm-marquee:hover .hm-marquee-track,
+  .hm-marquee:focus-within .hm-marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+/* No motion allowed: let the single visible set simply scroll by touch. */
+@media (prefers-reduced-motion: reduce) {
+  .hm-marquee {
+    overflow-x: auto;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}
+
+@keyframes hm-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* -------------------------------------------------------------- manifesto */
+
+.hm-manifesto {
+  position: relative;
+}
+
+/* Gold hairline that draws itself as the section arrives. */
+.hm-hairline {
+  height: 1px;
+  background: var(--hm-hair);
+  transform-origin: left center;
+}
+
+.js .hm-hairline[data-reveal] {
+  opacity: 1;
+  transform: scaleX(0);
+  transition: transform 1200ms var(--hm-ease);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.js .hm-hairline[data-reveal].is-visible {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .hm-hairline[data-reveal],
+  .js .hm-hairline[data-reveal].is-visible {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Vertical hairline running down the manifesto gutter. */
+.hm-gutter-rule {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--onyx) 18%, transparent) 20%,
+    color-mix(in srgb, var(--onyx) 18%, transparent) 80%,
+    transparent
+  );
+}
+
+/* --------------------------------------------------------------- numerals */
+
+.hm-figure {
+  line-height: 0.85;
+}
+
+.hm-col + .hm-col {
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .hm-col + .hm-col::before {
+    content: '';
+    position: absolute;
+    left: -1.75rem;
+    top: 0.35rem;
+    bottom: 0.35rem;
+    width: 1px;
+    background: rgba(230, 227, 221, 0.14);
+  }
+}
+
+/* ---------------------------------------------------------------- ventures */
+
+.hm-card {
+  position: relative;
+}
+
+.hm-media {
+  position: relative;
+  overflow: hidden;
+}
+
+.hm-media img {
+  transition:
+    transform 1100ms var(--hm-ease),
+    filter 700ms ease;
+}
+
+.hm-card:hover .hm-media img,
+.hm-card:focus-within .hm-media img {
+  transform: scale(1.055);
+  filter: grayscale(0) contrast(1.02);
+}
+
+/* A gold hairline that wipes across the top of the frame on hover. */
+.hm-media::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 800ms var(--hm-ease);
+}
+
+.hm-card:hover .hm-media::after,
+.hm-card:focus-within .hm-media::after {
+  transform: scaleX(1);
+}
+
+.hm-ghost {
+  position: absolute;
+  top: -0.35em;
+  left: -0.06em;
+  font-size: clamp(6rem, 14vw, 12rem);
+  line-height: 1;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--gold) 40%, transparent);
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hm-cta {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hm-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--onyx);
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  transition: transform 620ms var(--hm-ease);
+  z-index: -1;
+}
+
+.hm-cta:hover::before,
+.hm-cta:focus-visible::before {
+  transform: scaleY(1);
+}
+
+.hm-cta:hover,
+.hm-cta:focus-visible {
+  color: var(--stone);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-cta::before {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------- close */
+
+.hm-close {
+  --p: 0;
+}
+
+.hm-close-media {
+  position: absolute;
+  inset: -14% 0 -14% 0;
+  transform: translate3d(0, calc((var(--p) - 0.5) * 10%), 0);
+  will-change: transform;
+}
+
+/* ------------------------------------------------------------ focus rings */
+
+.hm a:focus-visible,
+.hm button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+/* --------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-hero-media,
+  .hm-close-media {
+    transform: none;
+  }
+  .hm-media img,
+  .hm-card:hover .hm-media img,
+  .hm-card:focus-within .hm-media img {
+    transform: none;
+    transition: none;
+  }
+  .hm-cue-rail::after {
+    animation: none;
+    transform: translate3d(0, 18px, 0);
+  }
+  .hm-marquee-track {
+    animation: none;
+  }
+}

@@ -6,6 +6,11 @@ import {
   useLoaderData,
 } from 'react-router';
 import {CUSTOMER_DETAILS_QUERY} from '~/graphql/customer-account/CustomerDetailsQuery';
+import accountStyles from '~/styles/account.css?url';
+
+export function links() {
+  return [{rel: 'stylesheet', href: accountStyles}];
+}
 
 export function shouldRevalidate() {
   return true;
@@ -40,46 +45,57 @@ export default function AccountLayout() {
   /** @type {LoaderReturnData} */
   const {customer} = useLoaderData();
 
-  const heading = customer
-    ? customer.firstName
-      ? `Welcome, ${customer.firstName}`
-      : `Welcome to your account.`
-    : 'Account Details';
+  const firstName = customer?.firstName;
 
   return (
-    <div className="account">
-      <h1>{heading}</h1>
-      <br />
-      <AccountMenu />
-      <br />
-      <br />
-      <Outlet context={{customer}} />
+    <div className="acct">
+      <header className="acct-shell acct-masthead">
+        <span className="tag acct-eyebrow" data-reveal>
+          Your account
+        </span>
+        <h1 className="display acct-title" data-reveal style={{'--reveal-delay': '120ms'}}>
+          {firstName ? (
+            <>
+              Welcome
+              <br />
+              <em>{firstName}</em>
+            </>
+          ) : (
+            <>
+              Account
+              <br />
+              <em>Details</em>
+            </>
+          )}
+        </h1>
+      </header>
+
+      <div className="acct-shell">
+        <AccountMenu />
+      </div>
+
+      <div className="acct-shell acct-body">
+        <Outlet context={{customer}} />
+      </div>
     </div>
   );
 }
 
 function AccountMenu() {
-  function isActiveStyle({isActive, isPending}) {
-    return {
-      fontWeight: isActive ? 'bold' : undefined,
-      color: isPending ? 'grey' : 'black',
-    };
-  }
+  const linkClass = ({isPending}) =>
+    isPending ? 'acct-nav-link is-pending' : 'acct-nav-link';
 
   return (
-    <nav role="navigation">
-      <NavLink to="/account/orders" style={isActiveStyle}>
-        Orders &nbsp;
+    <nav className="acct-nav" aria-label="Account">
+      <NavLink to="/account/orders" className={linkClass}>
+        Orders
       </NavLink>
-      &nbsp;|&nbsp;
-      <NavLink to="/account/profile" style={isActiveStyle}>
-        &nbsp; Profile &nbsp;
+      <NavLink to="/account/profile" className={linkClass}>
+        Profile
       </NavLink>
-      &nbsp;|&nbsp;
-      <NavLink to="/account/addresses" style={isActiveStyle}>
-        &nbsp; Addresses &nbsp;
+      <NavLink to="/account/addresses" className={linkClass}>
+        Addresses
       </NavLink>
-      &nbsp;|&nbsp;
       <Logout />
     </nav>
   );
@@ -87,8 +103,14 @@ function AccountMenu() {
 
 function Logout() {
   return (
-    <Form className="account-logout" method="POST" action="/account/logout">
-      &nbsp;<button type="submit">Sign out</button>
+    <Form
+      className="acct-signout-form"
+      method="POST"
+      action="/account/logout"
+    >
+      <button className="acct-signout" type="submit">
+        Sign out
+      </button>
     </Form>
   );
 }

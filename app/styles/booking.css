@@ -1,0 +1,507 @@
+/*
+ * /train booking console.
+ * Plain CSS only — Tailwind utilities still work in the JSX. Everything here
+ * is either state that Tailwind can't express cleanly (calendar cell states,
+ * colour-blind-safe indicators) or motion, which is always opt-in and always
+ * neutralised under prefers-reduced-motion.
+ */
+
+.bk {
+  --bk-line: color-mix(in srgb, #ffffff 11%, transparent);
+  --bk-line-strong: color-mix(in srgb, #ffffff 22%, transparent);
+  --bk-surface: color-mix(in srgb, #ffffff 3%, transparent);
+  --bk-surface-raised: color-mix(in srgb, #ffffff 6%, transparent);
+  --bk-gold: var(--gold, #c8a25b);
+  --bk-ink: #111111;
+  --bk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --bk-dur: 640ms;
+  --bk-dur-mid: 420ms;
+  --bk-dur-fast: 260ms;
+}
+
+/* ---------- focus: two-tone so it reads on gold, onyx and photos ---------- */
+.bk :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--bk-gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgb(17 17 17 / 0.85);
+  border-radius: 1px;
+  z-index: 3;
+}
+
+/* ---------- money ----------
+   Every figure on this screen is set in tabular numerals so columns of
+   dollars line up and a total never jitters as it changes. */
+.bk-money {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.015em;
+}
+
+/* ---------- calendar ----------
+   A hairline table, not a field of boxes: the frame supplies the top and
+   left rules, every cell supplies its own right and bottom. */
+.bk-cal {
+  border-top: 1px solid var(--bk-line);
+  border-left: 1px solid var(--bk-line);
+}
+
+.bk-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.bk-colhead {
+  padding-bottom: 0.6rem;
+  text-align: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #e6e3dd 38%, transparent);
+}
+
+.bk-cell,
+.bk-blank {
+  border-right: 1px solid var(--bk-line);
+  border-bottom: 1px solid var(--bk-line);
+}
+
+.bk-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  width: 100%;
+  background: transparent;
+  color: color-mix(in srgb, #e6e3dd 82%, transparent);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  line-height: 1;
+  transition:
+    background-color var(--bk-dur-fast) var(--bk-ease),
+    box-shadow var(--bk-dur-fast) var(--bk-ease),
+    color var(--bk-dur-fast) var(--bk-ease);
+}
+
+.bk-cell[data-selectable='true'] {
+  background: var(--bk-surface);
+  color: #f2efe9;
+  cursor: pointer;
+}
+
+.bk-cell[data-selectable='true']:hover {
+  background: color-mix(in srgb, #c8a25b 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #c8a25b 65%, transparent);
+  color: #fff;
+}
+
+.bk-cell[data-state='full'] {
+  color: color-mix(in srgb, #e6e3dd 32%, transparent);
+  cursor: not-allowed;
+}
+
+.bk-cell[data-state='closed'],
+.bk-cell[data-state='past'] {
+  color: color-mix(in srgb, #e6e3dd 20%, transparent);
+  cursor: default;
+}
+
+.bk-cell[data-selected='true'] {
+  background: var(--bk-gold);
+  box-shadow: inset 0 0 0 1px var(--bk-gold);
+  color: var(--bk-ink);
+  font-weight: 600;
+}
+
+/* Today — a quiet gold tick in the corner, never a competing fill. */
+.bk-cell[data-today='true']::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  height: 3px;
+  width: 3px;
+  background: var(--bk-gold);
+}
+
+.bk-cell[data-selected='true'][data-today='true']::before,
+.bk-cell[data-span='start']::before,
+.bk-cell[data-span='end']::before {
+  background: var(--bk-ink);
+}
+
+/* Availability indicator — shape carries the meaning, not just colour. */
+.bk-dot {
+  display: block;
+  height: 4px;
+  width: 4px;
+}
+
+.bk-cell[data-state='open'] .bk-dot {
+  background: var(--bk-gold);
+  border-radius: 50%;
+}
+
+.bk-cell[data-state='limited'] .bk-dot {
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--bk-gold);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.bk-cell[data-state='full'] .bk-dot {
+  width: 8px;
+  height: 1px;
+  background: currentColor;
+}
+
+.bk-cell[data-selected='true'] .bk-dot {
+  background: var(--bk-ink);
+  border-color: var(--bk-ink);
+}
+
+/* Camp date-range span */
+.bk-cell[data-span='inside'] {
+  background: color-mix(in srgb, #c8a25b 20%, transparent);
+  color: #fff;
+}
+
+.bk-cell[data-span='start'],
+.bk-cell[data-span='end'] {
+  background: var(--bk-gold);
+  color: var(--bk-ink);
+  font-weight: 600;
+}
+
+.bk-cell[data-span='start'] .bk-dot,
+.bk-cell[data-span='end'] .bk-dot,
+.bk-cell[data-span='inside'] .bk-dot {
+  opacity: 0;
+}
+
+/* Generated recurring package dates */
+.bk-cell[data-pattern='true'] {
+  background: color-mix(in srgb, #c8a25b 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #c8a25b 45%, transparent);
+  color: #fff;
+}
+
+/* ---------- selectable panels (slots, camps, clinics, tiers, days) ---------- */
+.bk-option {
+  position: relative;
+  text-align: left;
+  width: 100%;
+  border: 1px solid var(--bk-line-strong);
+  background: var(--bk-surface);
+  transition:
+    border-color var(--bk-dur-fast) var(--bk-ease),
+    background-color var(--bk-dur-fast) var(--bk-ease),
+    transform var(--bk-dur) var(--bk-ease);
+}
+
+.bk-option:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #c8a25b 70%, transparent);
+  background: var(--bk-surface-raised);
+}
+
+.bk-option[aria-pressed='true'],
+.bk-option[data-selected='true'] {
+  border-color: var(--bk-gold);
+  background: color-mix(in srgb, #c8a25b 10%, transparent);
+}
+
+/* A gold edge on the selected panel — reads instantly down a long list. */
+.bk-option[aria-pressed='true']::before {
+  content: '';
+  position: absolute;
+  inset-block: -1px;
+  left: -1px;
+  width: 2px;
+  background: var(--bk-gold);
+}
+
+.bk-option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bk-option:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+}
+
+/* ---------- offering cards ---------- */
+.bk-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid var(--bk-line-strong);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #ffffff 4%, transparent),
+    transparent 60%
+  );
+  transition:
+    border-color var(--bk-dur-mid) var(--bk-ease),
+    background-color var(--bk-dur-mid) var(--bk-ease),
+    transform var(--bk-dur) var(--bk-ease);
+}
+
+/* Inset gold frame — the "this one" signal, drawn not stamped. */
+.bk-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid transparent;
+  transition:
+    inset var(--bk-dur) var(--bk-ease),
+    border-color var(--bk-dur-mid) var(--bk-ease);
+}
+
+.bk-card:hover {
+  border-color: color-mix(in srgb, #c8a25b 60%, transparent);
+}
+
+.bk-card[aria-pressed='true'] {
+  border-color: var(--bk-gold);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #c8a25b 14%, transparent),
+    transparent 55%
+  );
+}
+
+.bk-card[aria-pressed='true']::after {
+  inset: 5px;
+  border-color: color-mix(in srgb, #c8a25b 42%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bk-card:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* The rule under CHOOSE / SELECTED draws itself across on hover. */
+.bk-cue {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 7px;
+}
+
+.bk-cue::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 16px;
+  background: currentColor;
+  transition: width var(--bk-dur) var(--bk-ease);
+}
+
+.bk-card:hover .bk-cue::after,
+.bk-card[aria-pressed='true'] .bk-cue::after,
+.bk-card:focus-visible .bk-cue::after {
+  width: 100%;
+}
+
+/* Photography sits behind the type, never competes with it. */
+.bk-card-photo {
+  transition: opacity var(--bk-dur) var(--bk-ease), transform 1.2s var(--bk-ease);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bk-card:hover .bk-card-photo {
+    transform: scale(1.04);
+  }
+}
+
+/* ---------- step + calendar transitions ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .bk-step-enter {
+    animation: bk-rise var(--bk-dur) var(--bk-ease) both;
+  }
+
+  /* Calm cross-fade when the calendar reconfigures for another format. */
+  .bk-swap {
+    animation: bk-fade var(--bk-dur) var(--bk-ease) both;
+  }
+
+  .bk-amount {
+    animation: bk-amount-in var(--bk-dur-mid) var(--bk-ease) both;
+  }
+}
+
+@keyframes bk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bk-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bk-amount-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bk-amount {
+  display: inline-block;
+}
+
+/* Totals block keeps its height while the figures inside change, so the
+   panel never reflows under the reader's eye. */
+.bk-total-slot {
+  min-height: 3.25rem;
+}
+
+/* ---------- mobile action bar ---------- */
+.bk-bar {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -18px 40px -24px rgb(0 0 0 / 0.9);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bk-bar {
+    animation: bk-bar-in var(--bk-dur-mid) var(--bk-ease) both;
+  }
+
+  .bk-sheet {
+    animation: bk-sheet-in var(--bk-dur-mid) var(--bk-ease) both;
+  }
+}
+
+@keyframes bk-bar-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes bk-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- misc ---------- */
+.bk-rail {
+  scrollbar-width: thin;
+}
+
+.bk-hairline {
+  border-color: color-mix(in srgb, #ffffff 14%, transparent);
+}
+
+/* A hairline meter for capacity — no rounded pills, no progress-bar chrome. */
+.bk-meter {
+  display: block;
+  height: 1px;
+  width: 100%;
+  background: color-mix(in srgb, #ffffff 14%, transparent);
+}
+
+.bk-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--bk-gold);
+  transition: width var(--bk-dur) var(--bk-ease);
+}
+
+.bk-field {
+  background: transparent;
+  border: 1px solid var(--bk-line-strong);
+  color: #e6e3dd;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  min-height: 52px;
+  transition:
+    border-color var(--bk-dur-fast) var(--bk-ease),
+    background-color var(--bk-dur-fast) var(--bk-ease);
+}
+
+.bk-field::placeholder {
+  color: color-mix(in srgb, #e6e3dd 32%, transparent);
+}
+
+.bk-field:hover {
+  border-color: color-mix(in srgb, #ffffff 38%, transparent);
+}
+
+.bk-field:focus {
+  background: var(--bk-surface);
+}
+
+.bk-field[aria-invalid='true'] {
+  border-color: #d9694f;
+}
+
+/* Native select on a dark field */
+select.bk-field {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #c8a25b 50%),
+    linear-gradient(135deg, #c8a25b 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% + 2px),
+    calc(100% - 13px) calc(50% + 2px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem;
+}
+
+select.bk-field option {
+  background: #111;
+  color: #e6e3dd;
+}
+
+/* ---------- reduced motion: nothing on this screen moves ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .bk *,
+  .bk *::before,
+  .bk *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

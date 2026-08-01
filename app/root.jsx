@@ -10,10 +10,19 @@ import {
   useRouteLoaderData,
 } from 'react-router';
 import favicon from '~/assets/favicon.svg';
-import {FOOTER_QUERY, HEADER_QUERY} from '~/lib/fragments';
+import '@fontsource/bai-jamjuree/400.css';
+import '@fontsource/bai-jamjuree/500.css';
+import '@fontsource/bai-jamjuree/600.css';
+import '@fontsource/bai-jamjuree/700.css';
+import '@fontsource/raleway/400.css';
+import '@fontsource/raleway/500.css';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
+import '@fontsource/source-sans-3/400.css';
+import '@fontsource/source-sans-3/600.css';
 import resetStyles from '~/styles/reset.css?url';
-import appStyles from '~/styles/app.css?url';
-import {PageLayout} from './components/PageLayout';
+import jvgoldStyles from '~/styles/jvgold.css?url';
+import {SiteLayout} from './components/site/SiteLayout';
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -95,19 +104,10 @@ export async function loader(args) {
  * @param {Route.LoaderArgs}
  */
 async function loadCriticalData({context}) {
-  const {storefront} = context;
-
-  const [header] = await Promise.all([
-    storefront.query(HEADER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        headerMenuHandle: 'main-menu', // Adjust to your header menu handle
-      },
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
-
-  return {header};
+  // The site navigation is bespoke rather than driven by Shopify menus, so
+  // there is no blocking query here. Add one only if a page needs data above
+  // the fold — anything that fails here 500s the whole document.
+  return {};
 }
 
 /**
@@ -117,25 +117,13 @@ async function loadCriticalData({context}) {
  * @param {Route.LoaderArgs}
  */
 function loadDeferredData({context}) {
-  const {storefront, customerAccount, cart} = context;
+  const {customerAccount, cart} = context;
 
-  // defer the footer query (below the fold)
-  const footer = storefront
-    .query(FOOTER_QUERY, {
-      cache: storefront.CacheLong(),
-      variables: {
-        footerMenuHandle: 'footer', // Adjust to your footer menu handle
-      },
-    })
-    .catch((error) => {
-      // Log query errors, but don't throw them so the page can still render
-      console.error(error);
-      return null;
-    });
   return {
     cart: cart.get(),
-    isLoggedIn: customerAccount.isLoggedIn(),
-    footer,
+    // mock.shop has no Customer Account API, so this rejects until the app is
+    // linked to the real store. Swallow it here or the header Await blows up.
+    isLoggedIn: customerAccount.isLoggedIn().catch(() => false),
   };
 }
 
@@ -146,16 +134,25 @@ export function Layout({children}) {
   const nonce = useNonce();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <link rel="stylesheet" href={resetStyles}></link>
-        <link rel="stylesheet" href={appStyles}></link>
+        <link rel="stylesheet" href={jvgoldStyles}></link>
         <Meta />
         <Links />
+        {/* Marks the document as JS-capable before first paint, so
+            reveal-on-scroll elements can start hidden without ever hiding
+            content from no-JS visitors. */}
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.add('js')`,
+          }}
+        />
       </head>
-      <body>
+      <body className="flex min-h-screen flex-col">
         {children}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
@@ -178,9 +175,9 @@ export default function App() {
       shop={data.shop}
       consent={data.consent}
     >
-      <PageLayout {...data}>
+      <SiteLayout cart={data.cart} isLoggedIn={data.isLoggedIn}>
         <Outlet />
-      </PageLayout>
+      </SiteLayout>
     </Analytics.Provider>
   );
 }
