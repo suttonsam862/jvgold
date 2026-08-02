@@ -242,7 +242,11 @@
 
 .ar-scrim--floor {
   background:
-    radial-gradient(120% 90% at 70% 30%, rgba(17, 17, 17, 0) 20%, rgba(17, 17, 17, 0.6) 100%),
+    radial-gradient(
+      120% 90% at 70% 30%,
+      rgba(17, 17, 17, 0) 20%,
+      rgba(17, 17, 17, 0.6) 100%
+    ),
     linear-gradient(
       to top,
       #111 4%,
@@ -251,16 +255,50 @@
     );
 }
 
-.ar-scrim--side {
+/* Chapter 02's walkout frame is lit from the right by two flame jets, and its
+   title block sits right. So the wash runs the other way: a hole punched over
+   the subject, everything around it pulled down far enough to carry type. */
+.ar-scrim--arena {
   background:
-    linear-gradient(to right, rgba(17, 17, 17, 0.92) 0%, rgba(17, 17, 17, 0.08) 64%),
-    radial-gradient(100% 80% at 20% 50%, rgba(17, 17, 17, 0) 35%, rgba(17, 17, 17, 0.65) 100%),
-    linear-gradient(to top, #111 2%, rgba(17, 17, 17, 0.32) 55%);
+    linear-gradient(
+      to left,
+      rgba(17, 17, 17, 0.88) 0%,
+      rgba(17, 17, 17, 0.2) 46%,
+      rgba(17, 17, 17, 0.62) 100%
+    ),
+    radial-gradient(
+      85% 65% at 45% 42%,
+      rgba(17, 17, 17, 0) 32%,
+      rgba(17, 17, 17, 0.58) 100%
+    ),
+    linear-gradient(to top, #111 3%, rgba(17, 17, 17, 0.3) 52%);
+}
+
+/* The light chapter's stage: the photograph washed into the stone palette
+   rather than sunk into black, with the left third opened up for the title. */
+.ar-scrim--warm {
+  background:
+    linear-gradient(
+      to right,
+      rgba(239, 236, 230, 0.84) 0%,
+      rgba(239, 236, 230, 0.3) 55%,
+      rgba(239, 236, 230, 0.52) 100%
+    ),
+    linear-gradient(
+      to top,
+      var(--stone-warm) 3%,
+      rgba(239, 236, 230, 0.44) 50%,
+      rgba(239, 236, 230, 0.14) 100%
+    );
 }
 
 .ar-scrim--vignette {
   background:
-    radial-gradient(115% 85% at 50% 42%, rgba(17, 17, 17, 0) 28%, rgba(17, 17, 17, 0.94) 100%),
+    radial-gradient(
+      115% 85% at 50% 42%,
+      rgba(17, 17, 17, 0) 28%,
+      rgba(17, 17, 17, 0.94) 100%
+    ),
     linear-gradient(to top, #111 3%, rgba(17, 17, 17, 0.22) 60%);
 }
 
@@ -297,8 +335,16 @@
   color: rgba(230, 227, 221, 0.07);
 }
 
-.ar-ghost--ink {
-  color: rgba(26, 26, 26, 0.07);
+/* Same stroke, deeper gold — the only one that holds up over a light stage. */
+.ar-ghost--stroke-deep {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(168, 133, 63, 0.6);
+}
+
+@media (min-width: 768px) {
+  .ar-ghost--stroke-deep {
+    -webkit-text-stroke-width: 2.5px;
+  }
 }
 
 /* ------------------------------------------------------------------ the rail
@@ -890,6 +936,97 @@
   height: 7px;
   background: var(--gold);
   rotate: 45deg;
+}
+
+/* =========================================================== the light chapter
+   Chapter 04 runs on stone rather than onyx, so every component that assumed a
+   dark ground gets a warm counterpart here. Declared after the components it
+   overrides — same specificity, later wins — except where a base rule carries a
+   pseudo-class, which is matched selector-for-selector below.
+   ========================================================================= */
+.ar-tone-light {
+  --ar-line: rgba(168, 133, 63, 0.45);
+}
+
+/* Photography in this chapter is warmed rather than pushed to pure grey; the
+   hover rules in .ar-plate still out-specify this and release full colour. */
+.ar-tone-light .img-mono {
+  filter: grayscale(1) sepia(0.2) contrast(1.02) brightness(1.04);
+}
+
+.ar-tone-light .outline-type {
+  -webkit-text-stroke-color: var(--gold-deep);
+}
+
+.ar-tone-light .ar-plate {
+  background: #d9d4cb;
+  color: var(--onyx);
+}
+
+.ar-tone-light .ar-plate__veil {
+  background: linear-gradient(
+    to top,
+    rgba(239, 236, 230, 0.75),
+    transparent 55%
+  );
+}
+
+.ar-tone-light .ar-plate__cue {
+  color: var(--gold-deep);
+}
+
+.ar-tone-light .ar-plate:focus-visible,
+.ar-tone-light .ar-marker:focus-visible {
+  outline-color: var(--gold-deep);
+}
+
+.ar-tone-light .ar-marker {
+  background: rgba(26, 26, 26, 0.035);
+  border-color: rgba(26, 26, 26, 0.14);
+}
+
+.ar-tone-light .ar-marker:hover,
+.ar-tone-light .ar-marker:focus-visible {
+  background: rgba(168, 133, 63, 0.1);
+  border-color: rgba(168, 133, 63, 0.55);
+}
+
+.ar-tone-light .ar-marker__pin {
+  background: var(--stone-warm);
+  border-color: var(--gold-deep);
+}
+
+.ar-tone-light .ar-marker:hover .ar-marker__pin,
+.ar-tone-light .ar-marker:focus-visible .ar-marker__pin {
+  background: var(--gold-deep);
+}
+
+.ar-tone-light .ar-marker__label,
+.ar-tone-light .ar-marker__cue {
+  color: var(--gold-deep);
+}
+
+.ar-tone-light .ar-marker__result {
+  color: rgba(26, 26, 26, 0.62);
+}
+
+.ar-tone-light .ar-file {
+  border-color: rgba(168, 133, 63, 0.42);
+  background:
+    linear-gradient(rgba(168, 133, 63, 0.05), rgba(168, 133, 63, 0.05)),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(168, 133, 63, 0.07) 0 2px,
+      transparent 2px 14px
+    );
+}
+
+.ar-tone-light .ar-file__row {
+  border-top-color: rgba(168, 133, 63, 0.28);
+}
+
+.ar-tone-light .ar-file__pulse {
+  background: var(--gold-deep);
 }
 
 /* ------------------------------------------------------------------ lightbox */

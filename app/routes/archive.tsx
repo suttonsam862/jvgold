@@ -39,10 +39,11 @@ export function meta() {
    a marker, a result line and a story; the rest are archive plates carrying
    only what the library actually records about them. */
 
-const ERA_LABEL: Record<Exclude<Era, 'training'>, string> = {
+const ERA_LABEL: Record<Era, string> = {
   'four-peat': '2017–2020 — The Four-Peat',
   asu: '2021–2025 — The Desert Years',
   cbu: '2025–2026 — The Last Stand',
+  training: '2026 → — The Build',
 };
 
 interface MilestoneSeed {
@@ -53,27 +54,37 @@ interface MilestoneSeed {
   story: string;
 }
 
-function buildEra(era: Exclude<Era, 'training'>, seeds: MilestoneSeed[]) {
-  const eraLabel = ERA_LABEL[era];
-  const seeded = new Set(seeds.map((s) => s.photoId));
+/** A plain archive plate — everything it says comes out of the library. */
+function eraPlate(era: Era, photoId: string): ArchivePlate {
+  const source = photo(photoId);
+  return {
+    id: source.id,
+    photoId: source.id,
+    alt: source.alt,
+    caption: source.caption,
+    eraLabel: ERA_LABEL[era],
+  };
+}
 
-  const milestones: ArchivePlate[] = seeds.map((seed) => {
-    const source = photo(seed.photoId);
-    return {
-      id: source.id,
-      photoId: source.id,
-      alt: source.alt,
-      caption: source.caption,
-      eraLabel,
-      marker: seed.marker,
-      title: seed.title,
-      result: seed.result,
-      story: seed.story,
-    };
-  });
+/**
+ * Splits an era's photographs into curated milestones and the gallery wall.
+ * `featured` names the frames that get a bespoke placement elsewhere in the
+ * chapter, so they are lifted out of the grid instead of appearing twice.
+ */
+function buildEra(era: Era, seeds: MilestoneSeed[], featured: string[] = []) {
+  const eraLabel = ERA_LABEL[era];
+  const placed = new Set([...seeds.map((s) => s.photoId), ...featured]);
+
+  const milestones: ArchivePlate[] = seeds.map((seed) => ({
+    ...eraPlate(era, seed.photoId),
+    marker: seed.marker,
+    title: seed.title,
+    result: seed.result,
+    story: seed.story,
+  }));
 
   const gallery: ArchivePlate[] = byEra(era)
-    .filter((p) => !seeded.has(p.id))
+    .filter((p) => !placed.has(p.id))
     .map((p) => ({
       id: p.id,
       photoId: p.id,
@@ -121,29 +132,53 @@ const fourPeat = buildEra('four-peat', [
   },
 ]);
 
-const desert = buildEra('asu', [
-  {
-    photoId: '24COL_NCAA_QRTS_0063',
-    marker: 'MARKER 05 — 2024',
-    title: 'Pac-12 Champion',
-    result: '2023–24 — 11–4, Pac-12 champion at 141 lbs, NCAA qualifier.',
-    story:
-      'The summit of the desert years. A conference title at 141 pounds and a ticket to the NCAA Championships — earned in the season after an injury-shortened freshman year and a sophomore campaign spent proving the freshman one had not been a fluke.',
-  },
-  {
-    photoId: '24COL_NCAA_RND16_9991',
-    marker: 'MARKER 06 — 2024',
-    title: 'The National Stage',
-    result: 'NCAA Championships, 2024 — 2–2.',
-    story:
-      'Four matches against the best 141-pounders in the country. Two wins, two losses, and the education that comes from finding the exact line between where you are and where the podium starts.',
-  },
-]);
+/* The walkout doubles as this chapter's pinned stage; the stance frame is
+   lifted out of the grid and hung full width. */
+const desertLead = eraPlate('asu', 'asu_jesse_in_stance');
+
+const desert = buildEra(
+  'asu',
+  [
+    {
+      photoId: 'ASU_Walkout_Red',
+      marker: 'MARKER 05 — ARIZONA STATE',
+      title: 'The Walkout',
+      result: 'Arizona State — four seasons, 2021 to 2025.',
+      story:
+        'Haze, two flame jets and a corridor that opens onto a mat. Nothing is decided in the walk. Everything that decides it already happened months earlier, in a room nobody photographs.',
+    },
+    {
+      photoId: '24COL_NCAA_QRTS_0063',
+      marker: 'MARKER 06 — 2024',
+      title: 'Pac-12 Champion',
+      result: '2023–24 — 11–4, Pac-12 champion at 141 lbs, NCAA qualifier.',
+      story:
+        'The summit of the desert years. A conference title at 141 pounds and a ticket to the NCAA Championships — earned in the season after an injury-shortened freshman year and a sophomore campaign spent proving the freshman one had not been a fluke.',
+    },
+    {
+      photoId: '24COL_NCAA_RND16_9991',
+      marker: 'MARKER 07 — 2024',
+      title: 'The National Stage',
+      result: 'NCAA Championships, 2024 — 2–2.',
+      story:
+        'Four matches against the best 141-pounders in the country. Two wins, two losses, and the education that comes from finding the exact line between where you are and where the podium starts.',
+    },
+    {
+      photoId: 'Asu_Match_Shot',
+      marker: 'MARKER 08 — ARIZONA STATE',
+      title: 'The Moment It Shows',
+      result: 'Four desert seasons — 7–1 before injury, then 16–7, 11–4, 13–7.',
+      story:
+        'A shout at the edge of the mat, the arena out of focus behind it. Four seasons stack up behind a second like this one: the year cut short by injury, the breakout, the conference title, and the last one a weight class up at 149.',
+    },
+  ],
+  [desertLead.photoId],
+);
 
 const lastStand = buildEra('cbu', [
   {
     photoId: '25CMW_SCUFFLE_QF_6647',
-    marker: 'MARKER 07 — 2025–26',
+    marker: 'MARKER 09 — 2025–26',
     title: 'Pinned the No. 20',
     result:
       '2025–26 — 14 matches at 141, seven dual wins, ranked as high as No. 23 nationally.',
@@ -152,7 +187,7 @@ const lastStand = buildEra('cbu', [
   },
   {
     photoId: '25CMW_SCUFFLE_QF_6387',
-    marker: 'MARKER 08 — 2026',
+    marker: 'MARKER 10 — 2026',
     title: 'The Last Uniform',
     result: 'California Baptist University — the last college singlet.',
     story:
@@ -160,13 +195,58 @@ const lastStand = buildEra('cbu', [
   },
 ]);
 
+/* Chapter 04. Two frames are lifted out of the grid: the wide group shot that
+   establishes the room, and the matside portrait that closes the archive and
+   doubles as this chapter's pinned stage. */
+const theRoom = eraPlate('training', 'deep_waters_team_pic_1');
+const afterTheSession = eraPlate('training', 'jesse_sitting_matside');
+
+const build = buildEra(
+  'training',
+  [
+    {
+      photoId: 'jesse_coach_behind_shot',
+      marker: 'MARKER 11 — MAY 2026',
+      title: 'The Room Opens',
+      result:
+        'Deep Waters Wrestling RTC — founded May 2026, Riverside, California.',
+      story:
+        'A mat, a roll-up door, and a room that had to be filled one athlete at a time. Between 11 May and 14 June 2026 the club logged 29 registered athletes and 25 active monthly memberships — three of them families training together. That is the whole record so far, and it is the part he is proudest of.',
+    },
+    {
+      photoId: 'Jesse_Coach_Stance',
+      marker: 'MARKER 12 — 2026',
+      title: 'Same Standard, Other Side',
+      result: 'JV GOLD LLC — private coaching, camps and the brand.',
+      story:
+        'He coaches the way he was coached: position first, no shortcuts, and an honest answer when the honest answer is that you are not there yet. The warm-up top still reads Arizona State. The standard underneath it has not moved.',
+    },
+    {
+      photoId: 'jesse_deep_waters_duo_pic',
+      marker: 'MARKER 13 — IN FORMATION',
+      title: 'Greater Later',
+      result: 'Future Champions — co-founded, not yet launched.',
+      story:
+        'The nonprofit arm is being built to put this room within reach of families who could not otherwise pay for it. It has not launched, and its 501(c)(3) status is not confirmed. The motto is the only part already finished: Greater Later.',
+    },
+  ],
+  [theRoom.photoId, afterTheSession.photoId],
+);
+
+/* Flat, ordered set — this is the walk order in the lightbox, and it follows
+   the order the plates appear on the page. */
 const plates: ArchivePlate[] = [
   ...fourPeat.milestones,
   ...fourPeat.gallery,
   ...desert.milestones,
+  desertLead,
   ...desert.gallery,
   ...lastStand.milestones,
   ...lastStand.gallery,
+  theRoom,
+  ...build.milestones,
+  ...build.gallery,
+  afterTheSession,
 ];
 
 /* ------------------------------------------------------------ gallery layout
@@ -178,23 +258,133 @@ interface PlateLayout {
   aspect: string;
 }
 
+/**
+ * The layout arrays are hand-written per chapter, so they only match the
+ * library as it stood when they were placed. A photograph added to photos.ts
+ * later should land in a plain cell at the end of its wall — never take the
+ * route down with an undefined lookup.
+ */
+const DEFAULT_SLOT: PlateLayout = {
+  className: 'col-span-6 md:col-span-4',
+  aspect: 'aspect-[4/3]',
+};
+
+const slot = (layout: PlateLayout[], i: number): PlateLayout =>
+  layout[i] ?? DEFAULT_SLOT;
+
 const fourPeatLayout: PlateLayout[] = [
-  {className: 'col-span-12 md:col-span-7 md:col-start-1', aspect: 'aspect-[16/10]'},
-  {className: 'col-span-6 md:col-span-4 md:col-start-9 md:mt-24', aspect: 'aspect-[3/4]'},
-  {className: 'col-span-6 md:col-span-5 md:col-start-2 md:mt-10', aspect: 'aspect-[4/3]'},
-  {className: 'col-span-6 md:col-span-3 md:col-start-8 md:mt-32', aspect: 'aspect-square'},
-  {className: 'col-span-6 md:col-span-4 md:col-start-1', aspect: 'aspect-[3/4]'},
-  {className: 'col-span-6 md:col-span-3 md:col-start-6 md:mt-20', aspect: 'aspect-[3/4]'},
-  {className: 'col-span-12 md:col-span-3 md:col-start-10 md:mt-8', aspect: 'aspect-[4/3]'},
-  {className: 'col-span-12 md:col-span-8 md:col-start-3 md:mt-16', aspect: 'aspect-[16/9]'},
+  {
+    className: 'col-span-12 md:col-span-7 md:col-start-1',
+    aspect: 'aspect-[16/10]',
+  },
+  {
+    className: 'col-span-6 md:col-span-4 md:col-start-9 md:mt-24',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-6 md:col-span-5 md:col-start-2 md:mt-10',
+    aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-6 md:col-span-3 md:col-start-8 md:mt-32',
+    aspect: 'aspect-square',
+  },
+  {
+    className: 'col-span-6 md:col-span-4 md:col-start-1',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-6 md:col-span-3 md:col-start-6 md:mt-20',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-12 md:col-span-3 md:col-start-10 md:mt-8',
+    aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-12 md:col-span-8 md:col-start-3 md:mt-16',
+    aspect: 'aspect-[16/9]',
+  },
+];
+
+/* Desert wall — the recruiting graphic and the interview grab are low-resolution
+   source material, so both are held small. */
+const desertLayout: PlateLayout[] = [
+  {
+    className: 'col-span-12 md:col-span-6 md:col-start-1',
+    aspect: 'aspect-[3/2]',
+  },
+  {
+    className: 'col-span-6 md:col-span-3 md:col-start-8 md:mt-24',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-6 md:col-span-5 md:col-start-2 md:mt-12',
+    aspect: 'aspect-[16/9]',
+  },
+  {
+    className: 'col-span-6 md:col-span-3 md:col-start-9 md:mt-6',
+    aspect: 'aspect-[3/4]',
+  },
 ];
 
 const lastStandLayout: PlateLayout[] = [
-  {className: 'col-span-12 md:col-span-8 md:col-start-1', aspect: 'aspect-[16/10]'},
   {
-    className:
-      'col-span-10 col-start-3 md:col-span-5 md:col-start-7 md:-mt-28 relative z-10',
+    className: 'col-span-12 md:col-span-7 md:col-start-1',
+    aspect: 'aspect-[16/10]',
+  },
+  {
+    className: 'col-span-10 col-start-3 md:col-span-4 md:col-start-9 md:mt-24',
     aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-8 col-start-3 md:col-span-4 md:col-start-3 md:mt-10',
+    aspect: 'aspect-[3/4]',
+  },
+];
+
+/* The build wall — the widest of the four, because this is the chapter with the
+   most people in it. */
+const buildLayout: PlateLayout[] = [
+  {
+    className: 'col-span-12 md:col-span-7 md:col-start-1',
+    aspect: 'aspect-[3/2]',
+  },
+  {
+    className: 'col-span-6 md:col-span-4 md:col-start-9 md:mt-24',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-6 md:col-span-3 md:col-start-2 md:mt-14',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-12 md:col-span-6 md:col-start-6 md:mt-28',
+    aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-6 md:col-span-3 md:col-start-1 md:mt-10',
+    aspect: 'aspect-[3/4]',
+  },
+  {
+    className: 'col-span-6 md:col-span-5 md:col-start-5 md:mt-20',
+    aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-12 md:col-span-7 md:col-start-6 md:mt-12',
+    aspect: 'aspect-[16/9]',
+  },
+  {
+    className: 'col-span-6 md:col-span-4 md:col-start-1 md:mt-16',
+    aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-6 md:col-span-4 md:col-start-6 md:mt-24',
+    aspect: 'aspect-[4/3]',
+  },
+  {
+    className: 'col-span-12 md:col-span-5 md:col-start-8 md:mt-8',
+    aspect: 'aspect-[3/2]',
   },
 ];
 
@@ -235,16 +425,39 @@ const caseFile = [
   ['JUL 1, 2026', 'Amended complaint filed'],
 ];
 
-const buildStats = [
-  ['29', 'athletes in Deep Waters Wrestling RTC’s first summer, 2026'],
-  ['FC', 'Future Champions — the nonprofit arm, in formation'],
-  ['1', 'room in Riverside where all of it starts'],
+/* Straight off the club's own records for 11 May – 14 June 2026. Nothing here
+   is projected, and no money is counted. */
+const clubLog = [
+  ['29', 'athletes registered with Deep Waters Wrestling RTC'],
+  ['25', 'active monthly memberships'],
+  ['3', 'families training together in the same room'],
+];
+
+const futureChampionsFile = [
+  ['ROLE', 'Co-founder'],
+  [
+    'PURPOSE',
+    'To put the same room within reach of families who could not otherwise pay for it',
+  ],
+  ['LAUNCH', 'Not launched'],
+  ['501(C)(3)', 'Status not confirmed'],
+  ['MOTTO', 'Greater Later'],
 ];
 
 const railStops: RailStop[] = [
-  {id: 'chapter-four-peat', index: '01', label: 'Four-Peat', years: '2017–2020'},
+  {
+    id: 'chapter-four-peat',
+    index: '01',
+    label: 'Four-Peat',
+    years: '2017–2020',
+  },
   {id: 'chapter-desert', index: '02', label: 'The Desert', years: '2021–2025'},
-  {id: 'chapter-last-stand', index: '03', label: 'Last Stand', years: '2025–2026'},
+  {
+    id: 'chapter-last-stand',
+    index: '03',
+    label: 'Last Stand',
+    years: '2025–2026',
+  },
   {id: 'chapter-build', index: '04', label: 'The Build', years: '2026 →'},
 ];
 
@@ -265,7 +478,11 @@ export default function ArchiveRoute() {
   return (
     <div className="ar-root bg-onyx-deep">
       {/* ================================================== HERO — THE ROADMAP */}
-      <section ref={heroRef} className="ar-hero" aria-labelledby="ar-hero-title">
+      <section
+        ref={heroRef}
+        className="ar-hero"
+        aria-labelledby="ar-hero-title"
+      >
         <div className="ar-hero__stage">
           <Img
             id="20CIFFNL3895"
@@ -400,8 +617,8 @@ export default function ArchiveRoute() {
                       key={plate.id}
                       plate={plate}
                       onOpen={openPlate}
-                      aspect={fourPeatLayout[i].aspect}
-                      className={fourPeatLayout[i].className}
+                      aspect={slot(fourPeatLayout, i).aspect}
+                      className={slot(fourPeatLayout, i).className}
                       sizes="(min-width: 768px) 40vw, 50vw"
                       revealDelay={(i % 3) * 90}
                     />
@@ -416,15 +633,15 @@ export default function ArchiveRoute() {
         <Scene id="chapter-desert" index={2}>
           <Stage>
             <Img
-              id="24COL_NCAA_RND16_9991"
+              id="ASU_Walkout_Red"
               alt=""
               aria-hidden="true"
               size="hero"
               sizes="100vw"
               fill
-              className="img-mono ar-parallax opacity-60 object-top"
+              className="img-mono ar-parallax object-[50%_30%] opacity-75"
             />
-            <span className="ar-scrim ar-scrim--side" aria-hidden="true" />
+            <span className="ar-scrim ar-scrim--arena" aria-hidden="true" />
             <Ghost className="ar-ghost--solid left-[-3vw] top-1/2 -translate-y-1/2 text-[clamp(9rem,26vw,22rem)]">
               ASU
             </Ghost>
@@ -454,8 +671,8 @@ export default function ArchiveRoute() {
                     <p className="mt-6 max-w-lg text-lg leading-relaxed text-stone/80">
                       A 7–1 start as a freshman, ended early by injury. A
                       breakout sophomore season with an upset of the
-                      nation&rsquo;s No. 6. Then the summit: the 2024 Pac-12
-                      championship at 141 pounds and a trip to the NCAA
+                      nation&rsquo;s No.{'\u00a0'}6. Then the summit: the 2024
+                      Pac-12 championship at 141 pounds and a trip to the NCAA
                       Championships. He finished the degree on the way through —
                       a B.S. in Interdisciplinary Studies, psychology and
                       business, December 2024.
@@ -463,7 +680,10 @@ export default function ArchiveRoute() {
                     <Ticks className="mt-8" />
                   </div>
 
-                  <div data-reveal style={{'--reveal-delay': '120ms'} as React.CSSProperties}>
+                  <div
+                    data-reveal
+                    style={{'--reveal-delay': '120ms'} as React.CSSProperties}
+                  >
                     <table className="ar-ledger tabular">
                       <caption>Season ledger — Arizona State</caption>
                       <thead>
@@ -475,7 +695,10 @@ export default function ArchiveRoute() {
                       </thead>
                       <tbody>
                         {asuSeasons.map((row) => (
-                          <tr key={row.season} data-peak={row.peak ? 'true' : undefined}>
+                          <tr
+                            key={row.season}
+                            data-peak={row.peak ? 'true' : undefined}
+                          >
                             <th scope="row">{row.season}</th>
                             <td>{row.record}</td>
                             <td>{row.note}</td>
@@ -489,7 +712,7 @@ export default function ArchiveRoute() {
 
               <div className="ar-container mt-20">
                 <p className="tag mb-8 text-stone/45" data-reveal>
-                  MARKERS 05 — 06 · OPEN ONE
+                  MARKERS 05 — 08 · OPEN ONE
                 </p>
                 <ol className="ar-markers">
                   {desert.milestones.map((plate, i) => (
@@ -504,24 +727,41 @@ export default function ArchiveRoute() {
                 </ol>
               </div>
 
-              <div className="mt-24">
-                <div className="ar-container">
-                  <p className="tag mb-10 text-stone/45" data-reveal>
-                    PLATE 15 · THE DESERT
-                  </p>
-                </div>
-                {desert.gallery.map((plate) => (
-                  <div key={plate.id} className="ar-container">
+              <div className="ar-container mt-24">
+                <p className="tag mb-10 text-stone/45" data-reveal>
+                  PLATE 17 · ABANDON ALL HOPE
+                </p>
+                {/* Hung uncropped: the banner runs along the very top edge and
+                    his feet sit on the very bottom one, so any band crop loses
+                    one or the other. Width does the work instead. */}
+                <PlateFigure
+                  plate={desertLead}
+                  onOpen={openPlate}
+                  aspect="aspect-[3/2]"
+                  className="mx-auto w-full max-w-5xl"
+                  sizes="(min-width: 1024px) 64rem, 100vw"
+                  focus="center"
+                  priority
+                />
+              </div>
+
+              <div className="ar-container mt-24">
+                <p className="tag mb-10 text-stone/45" data-reveal>
+                  PLATES 18–21 · THE DESERT
+                </p>
+                <div className="grid grid-cols-12 gap-x-4 gap-y-10 md:gap-x-6">
+                  {desert.gallery.map((plate, i) => (
                     <PlateFigure
+                      key={plate.id}
                       plate={plate}
                       onOpen={openPlate}
-                      aspect="aspect-[16/9] md:aspect-[21/9]"
-                      className="w-full"
-                      sizes="100vw"
-                      priority
+                      aspect={slot(desertLayout, i).aspect}
+                      className={slot(desertLayout, i).className}
+                      sizes="(min-width: 768px) 40vw, 50vw"
+                      revealDelay={(i % 3) * 90}
                     />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </Flow>
@@ -568,12 +808,12 @@ export default function ArchiveRoute() {
                   data-reveal
                 >
                   He came to California Baptist for an MBA program and one last
-                  college season. He got both: 14{' '}matches at 141, seven
-                  dual wins, a Big{' '}12 starting spot and a national
-                  ranking as high as No.{' '}23, capped by a pin over
-                  then-No.{' '}20 Pierson Manville. Then the
-                  university eliminated the wrestling program — and he chose to
-                  fight for it rather than fade out of it.
+                  college season. He got both: 14{' '}matches at 141, seven dual
+                  wins, a Big{' '}12 starting spot and a national ranking as
+                  high as No.{' '}23, capped by a pin over then-No.{' '}20
+                  Pierson Manville. Then the university eliminated the wrestling
+                  program — and he chose to fight for it rather than fade out of
+                  it.
                 </p>
 
                 <ul
@@ -624,7 +864,7 @@ export default function ArchiveRoute() {
 
               <div className="ar-container mt-20">
                 <p className="tag mb-8 text-stone/45" data-reveal>
-                  MARKERS 07 — 08 · OPEN ONE
+                  MARKERS 09 — 10 · OPEN ONE
                 </p>
                 <ol className="ar-markers">
                   {lastStand.milestones.map((plate, i) => (
@@ -641,7 +881,7 @@ export default function ArchiveRoute() {
 
               <div className="ar-container mt-24">
                 <p className="tag mb-10 text-stone/45" data-reveal>
-                  PLATES 18–19 · THE SOUTHERN SCUFFLE
+                  PLATES 24–26 · THE LAST SEASON
                 </p>
                 <div className="grid grid-cols-12 gap-x-4 gap-y-10 md:gap-x-6">
                   {lastStand.gallery.map((plate, i) => (
@@ -649,8 +889,8 @@ export default function ArchiveRoute() {
                       key={plate.id}
                       plate={plate}
                       onOpen={openPlate}
-                      aspect={lastStandLayout[i].aspect}
-                      className={lastStandLayout[i].className}
+                      aspect={slot(lastStandLayout, i).aspect}
+                      className={slot(lastStandLayout, i).className}
                       sizes="(min-width: 768px) 55vw, 90vw"
                       revealDelay={i * 100}
                     />
@@ -664,8 +904,18 @@ export default function ArchiveRoute() {
         {/* ------------------------------------------- 04 — THE BUILD */}
         <Scene id="chapter-build" index={4} className="ar-tone-light">
           <Stage className="bg-stone-warm">
+            <Img
+              id="jesse_sitting_matside"
+              alt=""
+              aria-hidden="true"
+              size="hero"
+              sizes="100vw"
+              fill
+              className="img-mono ar-parallax object-[42%_28%] opacity-75"
+            />
+            <span className="ar-scrim ar-scrim--warm" aria-hidden="true" />
             <span className="ar-scrim ar-scrim--grid" aria-hidden="true" />
-            <Ghost className="ar-ghost--ink left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[clamp(8rem,28vw,24rem)]">
+            <Ghost className="ar-ghost--stroke-deep right-[-2vw] top-[10vh] text-[clamp(8rem,26vw,22rem)]">
               NOW
             </Ghost>
           </Stage>
@@ -693,21 +943,20 @@ export default function ArchiveRoute() {
                       Greater Later
                     </h3>
                     <p className="mt-6 max-w-xl text-lg leading-relaxed text-onyx/75">
-                      Deep Waters Wrestling RTC opened in Riverside and drew
-                      29 athletes in its first summer. Future Champions, the
-                      nonprofit arm, is being built to put the same room within
-                      reach of families who could not otherwise pay for it. JV
-                      GOLD LLC carries the coaching, the camps and
-                      the brand. Same standard, new side of the mat.
+                      Deep Waters Wrestling RTC opened in Riverside in May 2026.
+                      JV GOLD LLC carries the private coaching. Future
+                      Champions, the nonprofit arm, is being co-founded and has
+                      not launched. No trophies in this chapter yet — only a
+                      room, a schedule and the people who keep turning up to it.
                     </p>
                     <Ticks className="mt-8" />
                   </div>
 
                   <ul className="ar-records" data-reveal>
                     {[
-                      'Deep Waters Wrestling RTC — Riverside, California',
-                      'Future Champions — nonprofit in formation',
-                      'JV GOLD LLC — coaching, camps and brand',
+                      'Deep Waters Wrestling RTC — Riverside, California, founded May 2026',
+                      'JV GOLD LLC — private coaching',
+                      'Future Champions — co-founded, not yet launched',
                       'Mexico National Team athlete',
                       'MBA candidate, California Baptist — August 2026',
                     ].map((record) => (
@@ -717,24 +966,128 @@ export default function ArchiveRoute() {
                 </div>
               </div>
 
-              <div className="ar-container mt-20 grid gap-10 sm:grid-cols-3">
-                {buildStats.map(([stat, label], i) => (
-                  <div
-                    key={label}
-                    data-reveal
-                    style={{'--reveal-delay': `${i * 90}ms`} as React.CSSProperties}
-                  >
-                    <p className="display outline-type text-[clamp(2.6rem,6vw,5rem)]">
-                      {stat}
-                    </p>
-                    <p className="mt-4 max-w-[26ch] text-xs leading-relaxed text-steel">
-                      {label}
-                    </p>
-                  </div>
-                ))}
+              <div className="ar-container mt-20">
+                <p className="tag mb-10 text-steel" data-reveal>
+                  FROM THE CLUB RECORDS — 11 MAY TO 14 JUNE 2026
+                </p>
+                <div className="grid gap-10 sm:grid-cols-3">
+                  {clubLog.map(([stat, label], i) => (
+                    <div
+                      key={label}
+                      data-reveal
+                      style={
+                        {'--reveal-delay': `${i * 90}ms`} as React.CSSProperties
+                      }
+                    >
+                      <p className="display outline-type tabular text-[clamp(2.6rem,6vw,5rem)]">
+                        {stat}
+                      </p>
+                      <p className="mt-4 max-w-[26ch] text-xs leading-relaxed text-steel">
+                        {label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <figure className="ar-container mt-24" data-reveal>
+              <div className="ar-container mt-24">
+                <p className="tag mb-10 text-steel" data-reveal>
+                  PLATE 27 · THE WHOLE ROOM
+                </p>
+                {/* Forty-five faces, none of them large. Full width, and the
+                    desktop crop only ever takes ceiling and bare mat. */}
+                <PlateFigure
+                  plate={theRoom}
+                  onOpen={openPlate}
+                  aspect="aspect-[3/2] md:aspect-[2/1]"
+                  className="w-full"
+                  sizes="100vw"
+                  focus="center"
+                  priority
+                />
+              </div>
+
+              <div className="ar-container mt-24">
+                <p className="tag mb-8 text-steel" data-reveal>
+                  MARKERS 11 — 13 · OPEN ONE
+                </p>
+                <ol className="ar-markers">
+                  {build.milestones.map((plate, i) => (
+                    <MilestoneMarker
+                      key={plate.id}
+                      plate={plate}
+                      onOpen={openPlate}
+                      offset={i % 2 === 1}
+                      revealDelay={i * 70}
+                    />
+                  ))}
+                </ol>
+              </div>
+
+              <div className="ar-container mt-20">
+                <div
+                  className="ar-file mx-auto max-w-3xl p-6 md:p-9"
+                  data-reveal
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <p className="tag text-gold-deep">FUTURE CHAMPIONS</p>
+                    <p className="ar-file__status tag text-gold-deep">
+                      <span className="ar-file__pulse" aria-hidden="true" />
+                      STATUS — IN FORMATION
+                    </p>
+                  </div>
+
+                  <dl className="mt-6">
+                    {futureChampionsFile.map(([term, detail]) => (
+                      <div key={term} className="ar-file__row">
+                        <dt className="tag text-steel">{term}</dt>
+                        <dd className="m-0 text-onyx/75">{detail}</dd>
+                      </div>
+                    ))}
+                  </dl>
+
+                  <p className="mt-6 text-xs leading-relaxed text-steel">
+                    Nothing on this card is a promise. When it launches, the
+                    archive will say so — and not a day earlier.
+                  </p>
+                </div>
+              </div>
+
+              <div className="ar-container mt-24">
+                <p className="tag mb-10 text-steel" data-reveal>
+                  PLATES 31–40 · THE ROOM, DAY TO DAY
+                </p>
+                <div className="grid grid-cols-12 gap-x-4 gap-y-10 md:gap-x-6">
+                  {build.gallery.map((plate, i) => (
+                    <PlateFigure
+                      key={plate.id}
+                      plate={plate}
+                      onOpen={openPlate}
+                      aspect={slot(buildLayout, i).aspect}
+                      className={slot(buildLayout, i).className}
+                      sizes="(min-width: 768px) 40vw, 50vw"
+                      revealDelay={(i % 3) * 90}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="ar-container mt-24">
+                <p className="tag mb-10 text-steel" data-reveal>
+                  PLATE 41 · AFTER THE SESSION
+                </p>
+                <PlateFigure
+                  plate={afterTheSession}
+                  onOpen={openPlate}
+                  aspect="aspect-[3/2]"
+                  className="mx-auto w-full max-w-6xl"
+                  sizes="(min-width: 1152px) 72rem, 100vw"
+                  focus="center"
+                  priority
+                />
+              </div>
+
+              <figure className="ar-container mt-20" data-reveal>
                 <blockquote className="display max-w-4xl text-[clamp(1.5rem,3.6vw,2.8rem)] text-onyx">
                   “The hard chapter is not the last chapter.”
                 </blockquote>
@@ -784,9 +1137,9 @@ export default function ArchiveRoute() {
                     Deep Waters Wrestling
                   </h3>
                   <p className="mt-4 max-w-sm text-sm leading-relaxed text-stone/65">
-                    The Riverside club built on technique, discipline and
-                    family — elite enough for champions, welcoming enough for a
-                    new kid on day one.
+                    The Riverside club built on technique, discipline and family
+                    — elite enough for champions, welcoming enough for a new kid
+                    on day one.
                   </p>
                 </div>
                 <span className="tag text-stone/60 transition-colors group-hover:text-gold">

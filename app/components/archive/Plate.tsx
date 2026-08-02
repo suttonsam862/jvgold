@@ -13,8 +13,19 @@ interface PlateFigureProps {
   priority?: boolean;
   /** Hide the printed caption when the composition wants pure image. */
   showCaption?: boolean;
+  /**
+   * Which part of the frame survives the crop. Defaults to the top, which is
+   * right for standing figures; group shots and seated portraits need centre.
+   */
+  focus?: 'top' | 'center' | 'bottom';
   revealDelay?: number;
 }
+
+const FOCUS_CLASS = {
+  top: 'object-top',
+  center: 'object-center',
+  bottom: 'object-bottom',
+} as const;
 
 /**
  * An archive plate: a framed photograph that opens the lightbox. The whole
@@ -28,6 +39,7 @@ export function PlateFigure({
   sizes = '(min-width: 768px) 33vw, 50vw',
   priority = false,
   showCaption = true,
+  focus = 'top',
   revealDelay = 0,
 }: PlateFigureProps) {
   return (
@@ -48,7 +60,7 @@ export function PlateFigure({
           size={priority ? 'hero' : 'web'}
           sizes={sizes}
           fill
-          className="img-mono object-top"
+          className={`img-mono ${FOCUS_CLASS[focus]}`}
         />
         <span className="ar-plate__veil" aria-hidden="true" />
         <span className="ar-plate__cue tag" aria-hidden="true">
