@@ -26,12 +26,6 @@ export const MINUTES_IN_DAY = 1440;
 /** Which of the three views is on screen. */
 export type CalendarView = 'month' | 'week' | 'day';
 
-/** The de-identified roster entries the edit form attaches athletes from. */
-export interface RosterEntry {
-  id: string;
-  name: string;
-}
-
 /** Height of one hour row in the time grid, in px. Mirrored in calendar.css. */
 export const HOUR_PX = 56;
 

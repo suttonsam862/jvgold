@@ -1,4 +1,5 @@
 import {
+  clinicPricing,
   formatLongDate,
   formatMoney,
   isScarce,
@@ -18,9 +19,12 @@ export function ClinicPicker({
   onToggleSession,
   todayIso,
 }: ClinicPickerProps) {
-  const count = sessionIds.length;
-  const toBundle = Math.max(0, offering.bundleSize - (count % offering.bundleSize));
-  const bundleComplete = count > 0 && count % offering.bundleSize === 0;
+  // One call to the engine, and the picker quotes exactly what the receipt
+  // charges. The saving in particular must come from here: the bundle discounts
+  // COMPLETE bundles only, so four dates save what three do, and the arithmetic
+  // this component used to do inline pro-rated it and overstated the number.
+  const pricing = clinicPricing(offering, sessionIds.length);
+  const {count, singles, bundleComplete, toNextBundle} = pricing;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:gap-12">
@@ -122,9 +126,7 @@ export function ClinicPicker({
               <span
                 key={i}
                 className={`h-px flex-1 ${
-                  i < count % offering.bundleSize || bundleComplete
-                    ? 'bg-gold'
-                    : 'bg-stone/15'
+                  i < singles || bundleComplete ? 'bg-gold' : 'bg-stone/15'
                 }`}
               />
             ))}
@@ -133,12 +135,14 @@ export function ClinicPicker({
             {count === 0
               ? `Select ${offering.bundleSize} dates to unlock the bundle.`
               : bundleComplete
-                ? `Bundle rate applied — you save ${formatMoney(
-                    (count / offering.bundleSize) *
-                      (offering.bundleSize * offering.pricePerSession -
-                        offering.bundlePrice),
-                  )}.`
-                : `Add ${toBundle} more to unlock the bundle rate.`}
+                ? `Bundle rate applied — ${formatMoney(pricing.total)} for ${count} clinic${
+                    count === 1 ? '' : 's'
+                  }, ${formatMoney(pricing.savings)} off.${
+                    toNextBundle > 0
+                      ? ` Add ${toNextBundle} more for another bundle.`
+                      : ''
+                  }`
+                : `Add ${toNextBundle} more to unlock the bundle rate.`}
           </p>
         </div>
 

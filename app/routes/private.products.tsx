@@ -18,7 +18,6 @@
  */
 
 import {useMemo, useReducer, useState} from 'react';
-import {Link} from 'react-router';
 import {requireDemoRole} from '~/lib/demoAuth';
 import {ANCHOR_DATE, INTEGRATIONS, PRODUCTS} from '~/lib/ops/seed';
 import {formatMoney} from '~/lib/ops/types';
@@ -45,6 +44,7 @@ import type {
   ProductDraft,
   StatusFilter,
 } from '~/components/products/productsState';
+import {Screen} from '~/components/ops/Screen';
 import styles from '~/styles/products.css?url';
 import type {Route} from './+types/private.products';
 
@@ -132,28 +132,23 @@ export default function PrivateProducts({loaderData}: Route.ComponentProps) {
   }
 
   return (
-    <div className="pm-page bg-onyx-deep text-stone">
-      {/* ------------------------------------------------------------ head */}
-      <header className="pm-head">
-        <div className="pm-head-inner">
-          <div className="pm-head-titles">
-            <Link to="/private/dashboard" className="pm-back">
-              <span aria-hidden="true">←</span> Management view
-            </Link>
-            <p className="tag text-gold-deep">Catalogue</p>
-            <h1 className="display pm-h1">Products</h1>
-          </div>
-          <button type="button" className="pm-primary" onClick={openNew}>
-            New product
-          </button>
-        </div>
-      </header>
-
-      <p role="status" className="pm-banner">
-        Seed catalogue · Shopify not linked · changes held in this browser only
-      </p>
-
-      <main className="pm-main">
+    /* The masthead, the measure and the "held in this browser" banner are
+       <Screen>'s, not this route's. `.pm-page` stays on the root purely as the
+       token scope — every --pm-* value the sheet, the rows and the editor read
+       is declared on it, and the editor renders inside this element. */
+    <Screen
+      rootClassName="pm-page"
+      eyebrow="Catalogue"
+      title="Products"
+      back={{to: '/private/dashboard', label: 'Management view'}}
+      actions={
+        <button type="button" className="pm-primary" onClick={openNew}>
+          New product
+        </button>
+      }
+      notice="Seed catalogue · Shopify not linked · changes held in this browser only"
+    >
+      <>
         {/* -------------------------------------------------------- figures */}
         <section className="pm-stats" data-reveal aria-label="Catalogue summary">
           <Stat
@@ -298,17 +293,17 @@ export default function PrivateProducts({loaderData}: Route.ComponentProps) {
             shopify={shopify}
           />
         </div>
-      </main>
 
-      <ProductEditor
-        draft={draft}
-        products={state.products}
-        original={editingOriginal}
-        onSave={save}
-        onClose={() => setDraft(null)}
-        onArchive={archiveFromSheet}
-      />
-    </div>
+        <ProductEditor
+          draft={draft}
+          products={state.products}
+          original={editingOriginal}
+          onSave={save}
+          onClose={() => setDraft(null)}
+          onArchive={archiveFromSheet}
+        />
+      </>
+    </Screen>
   );
 }
 

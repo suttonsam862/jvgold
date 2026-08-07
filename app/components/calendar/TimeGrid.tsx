@@ -187,10 +187,9 @@ export const TimeGrid = memo(function TimeGrid({
                 <button
                   key={event.id}
                   type="button"
-                  className="cal-chip"
+                  className="cal-chip cal-allday-chip"
                   data-tone={toneOf(event)}
                   data-readonly={event.readOnly || undefined}
-                  style={{minHeight: '22px', border: 0, borderLeft: '2px solid var(--tone)'}}
                   onClick={() => handleSelect(event.id)}
                 >
                   <span className="cal-chip-title">{event.title}</span>

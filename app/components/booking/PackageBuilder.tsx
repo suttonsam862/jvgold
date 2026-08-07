@@ -2,15 +2,16 @@ import {useMemo} from 'react';
 import {MonthGrid} from './MonthGrid';
 import type {DayMeta} from './MonthGrid';
 import {
-  datesForWeekdaysInMonth,
   formatLongDate,
   formatMediumDate,
   formatMoney,
   monthLabel,
-  tierForDays,
+  packagePricing,
+  tierPricing,
 } from '~/lib/offerings';
 import type {
   PackageTier,
+  SubscriptionTerm,
   TimeBandId,
   WeeklyPatternOffering,
 } from '~/lib/offerings';
@@ -39,6 +40,8 @@ interface PackageBuilderProps {
   weekdays: number[];
   bandId: TimeBandId | null;
   startMonth: string;
+  /** The commitment chosen upstairs. Every rate on this screen bends to it. */
+  term: SubscriptionTerm;
   onToggleWeekday: (weekday: number) => void;
   onPickTier: (weekdays: number[]) => void;
   onPickBand: (band: TimeBandId) => void;
@@ -52,16 +55,19 @@ export function PackageBuilder({
   weekdays,
   bandId,
   startMonth,
+  term,
   onToggleWeekday,
   onPickTier,
   onPickBand,
   onPickStartMonth,
   todayIso,
 }: PackageBuilderProps) {
-  const tier = tierForDays(offering, weekdays.length);
-  const dates = useMemo(
-    () => datesForWeekdaysInMonth(startMonth, weekdays),
-    [startMonth, weekdays],
+  // The tier the chosen days unlock, the dates that pattern generates, and the
+  // priced tier under the chosen term — one engine call, the same one
+  // `quoteFor()` uses. Nothing on this screen multiplies a rate itself.
+  const {tier, dates, pricing} = useMemo(
+    () => packagePricing(offering, weekdays, startMonth, term),
+    [offering, weekdays, startMonth, term],
   );
 
   const getDay = useMemo(() => {
@@ -114,7 +120,7 @@ export function PackageBuilder({
             className="mt-3 text-[0.65rem] uppercase tracking-[0.16em] text-stone/40"
           >
             {weekdays.length} day{weekdays.length === 1 ? '' : 's'} selected
-            {tier ? ` — ${tier.name}, ${formatMoney(tier.monthly)} per month` : ''}
+            {tier && pricing ? ` — ${tier.name}, ${pricing.rateLabel}` : ''}
           </p>
         </fieldset>
 
@@ -126,6 +132,7 @@ export function PackageBuilder({
               <li key={t.id}>
                 <TierRow
                   tier={t}
+                  term={term}
                   active={tier?.id === t.id}
                   onSelect={() => onPickTier(TIER_PATTERNS[t.id] ?? [2, 4])}
                 />
@@ -171,20 +178,29 @@ export function PackageBuilder({
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="tag text-gold">YOUR FIRST MONTH</p>
-            {tier ? (
+            {tier && pricing ? (
               <>
-                <p className="display bk-money mt-3 text-2xl text-stone">
-                  {formatMoney(tier.monthly)}
+                {pricing.rate !== pricing.listRate ? (
+                  <p className="bk-money mt-3 text-[0.65rem] uppercase tracking-[0.12em] text-stone/40 line-through">
+                    {formatMoney(pricing.listRate)} month to month
+                  </p>
+                ) : null}
+                <p className="display bk-money mt-1 text-2xl text-stone">
+                  {formatMoney(pricing.rate)}
                   <span className="text-base text-stone/50"> / month</span>
                 </p>
-                <p className="mt-2 max-w-[22ch] text-[0.62rem] uppercase leading-relaxed tracking-[0.14em] text-stone/40">
-                  Recurring — billed every month
-                  {dates.length
-                    ? `, about ${formatMoney(
-                        Math.round(tier.monthly / dates.length),
-                      )} a session`
+                <p className="mt-2 max-w-[24ch] text-[0.62rem] uppercase leading-relaxed tracking-[0.14em] text-stone/40">
+                  Recurring — billed every month until cancelled
+                  {pricing.perSession !== null
+                    ? `, about ${formatMoney(pricing.perSession)} a session`
                     : ''}
                 </p>
+                {pricing.minCycles !== null ? (
+                  <p className="bk-money mt-2 max-w-[24ch] text-[0.62rem] uppercase leading-relaxed tracking-[0.14em] text-gold">
+                    {pricing.months}-month minimum ·{' '}
+                    {formatMoney(pricing.commitmentTotal)} in total
+                  </p>
+                ) : null}
               </>
             ) : (
               <p className="display mt-3 text-2xl text-stone">Build your week</p>
@@ -250,13 +266,18 @@ export function PackageBuilder({
 
 function TierRow({
   tier,
+  term,
   active,
   onSelect,
 }: {
   tier: PackageTier;
+  term: SubscriptionTerm;
   active: boolean;
   onSelect: () => void;
 }) {
+  // Priced by the same helper the receipt uses. `tier.monthly` is the list rate
+  // and is never printed on its own once a term is attached to it.
+  const pricing = tierPricing(tier, term);
   return (
     <button
       type="button"
@@ -291,10 +312,15 @@ function TierRow({
         </span>
       </span>
       <span className="flex shrink-0 items-baseline gap-1 sm:flex-col sm:items-end">
+        {pricing.rate !== pricing.listRate ? (
+          <span className="bk-money text-[0.6rem] uppercase tracking-[0.12em] text-stone/40 line-through">
+            {formatMoney(pricing.listRate)}
+          </span>
+        ) : null}
         <span
           className={`display bk-money text-2xl ${active ? 'text-gold' : 'text-stone/80'}`}
         >
-          {formatMoney(tier.monthly)}
+          {formatMoney(pricing.rate)}
         </span>
         <span className="text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
           per month

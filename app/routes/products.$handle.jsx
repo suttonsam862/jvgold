@@ -10,6 +10,7 @@ import {
 import {ProductPrice} from '~/components/ProductPrice';
 import {ProductImage} from '~/components/ProductImage';
 import {ProductForm} from '~/components/ProductForm';
+import {useSellingPlans} from '~/components/SellingPlanSelector';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
 import styles from '~/styles/commerce.css?url';
 
@@ -108,6 +109,11 @@ export default function Product() {
     selectedOrFirstAvailableVariant: selectedVariant,
   });
 
+  // Resolves the purchase options for the variant on screen and keeps the
+  // choice in `?selling_plan=`. Returns an inert, empty state when the product
+  // has no selling plans — which is every product today.
+  const sellingPlans = useSellingPlans(product, selectedVariant);
+
   const {title, descriptionHtml, vendor} = product;
 
   return (
@@ -138,15 +144,25 @@ export default function Product() {
             {title}
           </h1>
 
+          {/*
+            Leads with the rate for whatever purchase option is selected. Both
+            figures are Shopify MoneyV2 — the plan's per-delivery rate struck
+            against the variant's own one-off price. Nothing is computed here.
+          */}
           <ProductPrice
-            price={selectedVariant?.price}
-            compareAtPrice={selectedVariant?.compareAtPrice}
+            price={sellingPlans.displayPrice}
+            compareAtPrice={sellingPlans.displayCompareAtPrice}
+            suffix={sellingPlans.priceSuffix}
+            compareLabel={
+              sellingPlans.priceSuffix ? 'One-off price' : 'Regular price'
+            }
             className="mt-6 mb-10 text-xl text-gold-deep md:text-2xl"
           />
 
           <ProductForm
             productOptions={productOptions}
             selectedVariant={selectedVariant}
+            sellingPlans={sellingPlans}
           />
 
           {descriptionHtml ? (
@@ -200,6 +216,45 @@ const PRODUCT_VARIANT_FRAGMENT = `#graphql
       amount
       currencyCode
     }
+    # Subscription pricing for THIS variant. The discounted rate is whatever
+    # Shopify says it is here — the app never recomputes it, because this is
+    # the number checkout will charge.
+    #
+    # This lives on the shared variant fragment on purpose. useOptimisticVariant
+    # swaps in adjacent and first-selectable variants while an option change is
+    # in flight; if only selectedOrFirstAvailableVariant carried allocations the
+    # plan chips would blink out mid-interaction. A first:10 cap keeps the query
+    # cost bounded (the whole product query measures 147 points against the live
+    # store with this included).
+    sellingPlanAllocations(first: 10) {
+      nodes {
+        checkoutChargeAmount {
+          amount
+          currencyCode
+        }
+        remainingBalanceChargeAmount {
+          amount
+          currencyCode
+        }
+        sellingPlan {
+          id
+        }
+        priceAdjustments {
+          compareAtPrice {
+            amount
+            currencyCode
+          }
+          perDeliveryPrice {
+            amount
+            currencyCode
+          }
+          price {
+            amount
+            currencyCode
+          }
+        }
+      }
+    }
     product {
       title
       handle
@@ -227,6 +282,45 @@ const PRODUCT_FRAGMENT = `#graphql
     description
     encodedVariantExistence
     encodedVariantAvailability
+    # True when the product can ONLY be bought on a plan. Drives whether the
+    # picker offers a one-off chip at all.
+    requiresSellingPlan
+    # The purchase options the merchant has published. Empty today — no plans
+    # exist in Shopify yet — and the UI renders nothing when it is.
+    #
+    # NOTE: the Storefront API's SellingPlanRecurringBillingPolicy exposes only
+    # interval and intervalCount. There is no minCycles, so the minimum
+    # commitment California's ARL requires us to disclose can only come from
+    # each plan's merchant-authored description. SellingPlanSelector blocks a
+    # renewing plan that has none rather than guessing at a term.
+    sellingPlanGroups(first: 10) {
+      nodes {
+        appName
+        name
+        options {
+          name
+          values
+        }
+        sellingPlans(first: 10) {
+          nodes {
+            id
+            name
+            description
+            recurringDeliveries
+            options {
+              name
+              value
+            }
+            billingPolicy {
+              ... on SellingPlanRecurringBillingPolicy {
+                interval
+                intervalCount
+              }
+            }
+          }
+        }
+      }
+    }
     options {
       name
       optionValues {

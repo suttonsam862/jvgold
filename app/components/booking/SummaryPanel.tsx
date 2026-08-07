@@ -1,4 +1,5 @@
-import {formatMoney} from '~/lib/offerings';
+import {RenewalDisclosure} from './RenewalDisclosure';
+import {formatMoney, rateCopy} from '~/lib/offerings';
 import type {Offering, Quote} from '~/lib/offerings';
 
 interface SummaryPanelProps {
@@ -36,15 +37,23 @@ export function SummaryPanel({
 
   const charges = quote.lines.filter((l) => l.kind === 'charge');
   const notes = quote.lines.filter((l) => l.kind !== 'charge');
-  const isDeposit = quote.cadence === 'deposit';
-  const isMonthly = quote.cadence === 'monthly';
+  // `/mo` and its long forms are the engine's business, not this panel's.
+  const rate = rateCopy(quote);
+  const isCamp = offering.mode === 'camp-block';
 
   return (
     <div className="border bk-hairline">
       <div className="flex items-start justify-between gap-4 border-b bk-hairline p-7 pb-5">
         <div>
-          <p className="tag text-gold">YOUR BOOKING</p>
+          <p className="tag text-gold">
+            {isCamp ? 'YOUR CAMP BOOKING' : 'YOUR BOOKING'}
+          </p>
           <p className="display mt-3 text-xl text-stone">{offering.name}</p>
+          {isCamp ? (
+            <p className="mt-2 text-[0.6rem] uppercase tracking-[0.18em] text-stone/45">
+              {formatMoney(offering.dayRate)} per day · billed to the host
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -82,7 +91,9 @@ export function SummaryPanel({
               </span>
               <span className="bk-money shrink-0 text-sm text-stone">
                 {formatMoney(line.amount)}
-                {isMonthly ? <span className="text-stone/45">/mo</span> : null}
+                {rate.suffix ? (
+                  <span className="text-stone/45">{rate.suffix}</span>
+                ) : null}
               </span>
             </div>
           ))}
@@ -100,9 +111,9 @@ export function SummaryPanel({
               </span>
             </div>
           ))}
-          {quote.savings ? (
+          {quote.savingsLabel ? (
             <p className="text-[0.65rem] uppercase tracking-[0.16em] text-gold">
-              You save {formatMoney(quote.savings)}
+              {quote.savingsLabel}
             </p>
           ) : null}
         </div>
@@ -119,14 +130,14 @@ export function SummaryPanel({
             className="bk-amount display bk-money text-[2.4rem] leading-none text-stone"
           >
             {formatMoney(quote.dueNow)}
-            {isMonthly ? (
-              <span className="ml-1 text-base text-stone/50">/mo</span>
+            {rate.suffix ? (
+              <span className="ml-1 text-base text-stone/50">{rate.suffix}</span>
             ) : null}
           </span>
         </div>
 
         {/* Then — the balance as its own ruled line, never buried in prose. */}
-        {isDeposit && quote.balance !== null ? (
+        {rate.isDeposit && quote.balance !== null ? (
           <div className="mt-5 flex flex-col gap-3 border-t bk-hairline pt-5">
             <div className="flex items-baseline justify-between gap-4">
               <span className="text-[0.6rem] uppercase tracking-[0.18em] text-stone/45">
@@ -147,11 +158,19 @@ export function SummaryPanel({
           </div>
         ) : null}
 
-        {isMonthly && quote.balanceLabel ? (
+        {rate.isMonthly && quote.balanceLabel ? (
           <p className="mt-5 border-t bk-hairline pt-5 text-xs leading-relaxed text-stone/55">
-            {quote.balanceLabel}. This is a recurring monthly charge, not a
-            one-time total.
+            {quote.balanceLabel}. {rate.billingLine}
           </p>
+        ) : null}
+
+        {/* The renewal facts sit with the money, not only under the chips. */}
+        {quote.renewal ? (
+          <RenewalDisclosure
+            renewal={quote.renewal}
+            variant="compact"
+            className="mt-5"
+          />
         ) : null}
 
         <p className="mt-4 text-xs leading-relaxed text-stone/45">{quote.terms}</p>

@@ -1,8 +1,22 @@
 /* ==========================================================================
  * JV GOLD — PRIVATE CALENDAR
  *
- * Dark register (onyx-deep), hairlines over cards, tabular figures. Everything
- * here is scoped under .cal so it cannot leak into the light-register site.
+ * LIGHT REGISTER. Hairlines over cards, tabular figures. Everything here is
+ * scoped under .cal so it cannot leak into the rest of the site, and every
+ * colour in the file comes out of the local token block below — which is
+ * itself bound to the `.ops` register tokens, so the whole time grid flips
+ * with the page rather than with a find-and-replace.
+ *
+ * THE CONTRAST CONSTRAINT, measured on the warm stone ground #E6E3DD:
+ *   --cal-ink    #1A1A1A  13.59:1   event titles, day numbers, form values
+ *   --cal-dim    #5A5A5A   5.38:1   times, meta, secondary labels
+ *   --cal-faint  #636363   4.69:1   the hour gutter, weekday caps, all-day rail
+ *   --cal-accent #7A5E29   4.73:1   gold's VOICE as type (bronze)
+ *   --cal-now    #B03A28   4.71:1   the now-line and its clock label
+ * Brand gold NEVER carries type here. It survives as a PLATE: the today pill,
+ * the segmented thumb, the selected-day fill and the primary button are all
+ * gold grounds with onyx text on top (7.95:1). Nothing on this screen is a
+ * gold letterform on a light surface.
  *
  * Motion budget: transform/opacity only, 600-900ms on the expensive easing,
  * and every custom transition is neutralised under prefers-reduced-motion at
@@ -10,15 +24,32 @@
  * ========================================================================== */
 
 .cal {
-  --cal-ink: #e6e3dd;
-  --cal-dim: #8d8d8d;
-  --cal-faint: #6b6b6b;
-  --cal-bg: #111111;
-  --cal-raise: #171717;
-  --cal-line: rgba(230, 227, 221, 0.09);
-  --cal-line-strong: rgba(230, 227, 221, 0.18);
-  --cal-gold: #c8a25b;
-  --cal-gold-deep: #a8853f;
+  /* ---- ink ---- */
+  --cal-ink: var(--ink, #1a1a1a);
+  --cal-dim: var(--ink-mute, #5a5a5a);
+  --cal-faint: #636363; /* 4.69:1 — the smallest type on the grid */
+  --cal-accent: var(--ink-accent, #7a5e29);
+  --cal-now: #b03a28;
+  --cal-bad: var(--ink-warn, #9a3412);
+
+  /* ---- ground ---- */
+  --cal-bg: var(--surface, #e6e3dd);
+  --cal-raise: var(--surface-raised, #efece6);
+  --cal-sunken: color-mix(in srgb, var(--onyx) 4%, transparent);
+  --cal-hover: color-mix(in srgb, var(--onyx) 6%, transparent);
+  --cal-scrim: color-mix(in srgb, var(--onyx-deep) 48%, transparent);
+
+  /* ---- hairlines ---- */
+  --cal-line: color-mix(in srgb, var(--onyx) 13%, transparent);
+  --cal-line-strong: color-mix(in srgb, var(--onyx) 26%, transparent);
+
+  /* ---- the gold PLATE, and the wash that goes with it ---- */
+  --cal-plate: var(--selected-bg, #c8a25b);
+  --cal-plate-ink: var(--selected-ink, #111111);
+  --cal-wash: color-mix(in srgb, var(--gold) 12%, transparent);
+  /* Brightness step for a hovered event block: DARKEN on a light ground. */
+  --cal-lift: 0.94;
+
   --cal-hour: 56px;
   --cal-gutter: 52px;
   --cal-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -27,11 +58,44 @@
   font-family: 'Raleway', system-ui, sans-serif;
 }
 
+/* The same token names re-bound for a dark ground, so the grid is one class
+   away from the old register rather than a rewrite. Values re-measured on
+   #111111 exactly as the .ops-dark block in jvgold.css is. */
+.ops-dark .cal,
+.cal.ops-dark {
+  --cal-ink: #e6e3dd;
+  --cal-dim: #8d8d8d;
+  --cal-faint: #8a8a8a;
+  --cal-accent: #c8a25b;
+  --cal-now: #e04f3d;
+  --cal-bad: #e08a7d;
+
+  --cal-bg: #111111;
+  --cal-raise: #171717;
+  --cal-sunken: rgba(230, 227, 221, 0.018);
+  --cal-hover: rgba(230, 227, 221, 0.04);
+  --cal-scrim: rgba(8, 8, 8, 0.62);
+
+  --cal-line: rgba(230, 227, 221, 0.09);
+  --cal-line-strong: rgba(230, 227, 221, 0.18);
+
+  --cal-wash: rgba(200, 162, 91, 0.09);
+  --cal-lift: 1.28;
+}
+
 @media (min-width: 768px) {
   .cal {
     --cal-hour: 64px;
     --cal-gutter: 68px;
   }
+}
+
+/* The page measure. A time grid gets unreadable long before 1440px — seven
+   columns at that width put an hour of mat time in a 190px box — so this
+   screen keeps the narrower 1180px it was designed at. Passed to <Screen> as
+   `rootClassName`, which is the only thing that may override --ops-measure. */
+.cal-screen {
+  --ops-measure: 1180px;
 }
 
 .cal-tabular {
@@ -72,7 +136,8 @@
 }
 
 .cal-seg-btn[aria-pressed='true'] {
-  color: #111111;
+  /* Onyx on the gold thumb — 7.95:1. Gold as a plate, never as a letterform. */
+  color: var(--cal-plate-ink);
   font-weight: 700;
 }
 
@@ -82,7 +147,7 @@
   top: 3px;
   bottom: 3px;
   left: 0;
-  background: var(--cal-gold);
+  background: var(--cal-plate);
   transition:
     transform 620ms var(--cal-ease),
     width 620ms var(--cal-ease);
@@ -106,8 +171,8 @@
 }
 
 .cal-icon-btn:hover {
-  border-color: var(--cal-gold);
-  color: var(--cal-gold);
+  border-color: var(--cal-accent);
+  color: var(--cal-accent);
 }
 
 .cal-text-btn {
@@ -126,8 +191,8 @@
 }
 
 .cal-text-btn:hover {
-  border-color: var(--cal-gold);
-  color: var(--cal-gold);
+  border-color: var(--cal-accent);
+  color: var(--cal-accent);
 }
 
 .cal-text-btn[disabled] {
@@ -221,20 +286,39 @@
 }
 
 .cal-day:hover {
-  background: rgba(230, 227, 221, 0.04);
+  background: var(--cal-hover);
 }
 
-.cal-day[data-outside='true'] {
-  opacity: 0.38;
+/* Out-of-month days are quieter, not dissolved. A blanket opacity took the
+   date below AA; the number keeps its own legible colour and only the chips
+   step back. */
+.cal-day[data-outside='true'] .cal-daynum {
+  color: var(--cal-faint);
+}
+
+.cal-day[data-outside='true'] .cal-chip,
+.cal-day[data-outside='true'] .cal-more,
+.cal-day[data-outside='true'] .cal-dots {
+  opacity: 0.6;
 }
 
 .cal-day[data-weekend='true'] {
-  background: rgba(230, 227, 221, 0.018);
+  background: var(--cal-sunken);
 }
 
+/* THE SELECTED DAY — the one place brand gold is still allowed to be a large
+   area of colour, because everything sitting on it is onyx (10.8:1). */
 .cal-day[data-selected='true'] {
-  background: rgba(200, 162, 91, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(200, 162, 91, 0.45);
+  background: color-mix(in srgb, var(--gold) 38%, var(--cal-bg));
+  box-shadow: inset 0 0 0 1px var(--gold-deep);
+  color: var(--onyx-deep);
+}
+
+.cal-day[data-selected='true'] .cal-daynum,
+.cal-day[data-selected='true'] .cal-chip,
+.cal-day[data-selected='true'] .cal-chip-time,
+.cal-day[data-selected='true'] .cal-more {
+  color: var(--onyx-deep);
 }
 
 .cal-daynum {
@@ -252,8 +336,8 @@
 }
 
 .cal-day[data-today='true'] .cal-daynum {
-  background: var(--cal-gold);
-  color: #111111;
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
   font-weight: 700;
 }
 
@@ -274,8 +358,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-left: 2px solid var(--tone, var(--cal-gold));
-  background: color-mix(in srgb, var(--tone, var(--cal-gold)) 14%, transparent);
+  border-left: 2px solid var(--tone, var(--cal-accent));
+  background: color-mix(in srgb, var(--tone, var(--cal-accent)) 16%, transparent);
   color: var(--cal-ink);
 }
 
@@ -290,11 +374,14 @@
   text-overflow: ellipsis;
 }
 
+/* Imported from Google and therefore READ-ONLY: a dashed edge plus a hatch.
+   The hatch is ink on a light ground, not light on a dark one, so the locked
+   state is still visible after the register flip. */
 .cal-chip[data-readonly='true'] {
   border-left-style: dashed;
   background: repeating-linear-gradient(
     135deg,
-    rgba(230, 227, 221, 0.06) 0 3px,
+    color-mix(in srgb, var(--onyx) 10%, transparent) 0 3px,
     transparent 3px 6px
   );
 }
@@ -318,7 +405,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--tone, var(--cal-gold));
+  background: var(--tone, var(--cal-accent));
 }
 
 @media (max-width: 419px) {
@@ -375,13 +462,15 @@
 }
 
 .cal-timehead-day[data-today='true'] .cal-timehead-num {
-  background: var(--cal-gold);
-  color: #111111;
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
   font-weight: 700;
 }
 
+/* A 2px indicator has to clear 3:1 as a non-text UI component; gold on stone
+   is 1.87:1, so the underline is bronze. */
 .cal-timehead-day[data-selected='true'] {
-  box-shadow: inset 0 -2px 0 var(--cal-gold);
+  box-shadow: inset 0 -2px 0 var(--cal-accent);
 }
 
 /* All-day rail sits above the scrolling body and never scrolls with it. */
@@ -409,6 +498,23 @@
   border-left: 1px solid var(--cal-line);
 }
 
+/* A session whose clock he never wrote down lives here rather than pretending
+   to start at midnight, so this rail is a primary target on this screen — not
+   the afterthought it is in most calendars. 44px under a thumb, tighter under
+   a mouse where the rail would otherwise eat the grid. */
+.cal-allday-chip {
+  min-height: 26px;
+  border: 0;
+  border-left: 2px solid var(--tone, var(--cal-accent));
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .cal-allday-chip {
+    min-height: 44px;
+  }
+}
+
 .cal-scroll {
   position: relative;
   overflow-y: auto;
@@ -417,7 +523,7 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgba(200, 162, 91, 0.5) transparent;
+  scrollbar-color: var(--cal-line-strong) transparent;
 }
 
 .cal-body {
@@ -457,11 +563,11 @@
 }
 
 .cal-col[data-weekend='true'] {
-  background-color: rgba(230, 227, 221, 0.018);
+  background-color: var(--cal-sunken);
 }
 
 .cal-col[data-today='true'] {
-  background-color: rgba(200, 162, 91, 0.045);
+  background-color: var(--cal-wash);
 }
 
 /* Blocks */
@@ -478,26 +584,30 @@
   color: var(--cal-ink);
   cursor: pointer;
   border: 0;
-  border-left: 2px solid var(--tone, var(--cal-gold));
-  background: color-mix(in srgb, var(--tone, var(--cal-gold)) 20%, #141414);
+  border-left: 2px solid var(--tone, var(--cal-accent));
+  background: color-mix(in srgb, var(--tone, var(--cal-accent)) 16%, var(--cal-bg));
   transition:
     filter 400ms var(--cal-ease),
     box-shadow 400ms var(--cal-ease);
 }
 
+/* Hover DARKENS on light and brightens on dark — same gesture, opposite sign,
+   which is why the step is a token rather than a literal. */
 .cal-block:hover {
-  filter: brightness(1.28);
+  filter: brightness(var(--cal-lift));
 }
 
 .cal-block[data-selected='true'] {
-  box-shadow: 0 0 0 1px var(--cal-gold);
+  box-shadow: 0 0 0 1px var(--cal-accent);
 }
 
+/* Read-only (Google) blocks: dashed edge + ink hatch, same lock language as
+   the month chips. */
 .cal-block[data-readonly='true'] {
   border-left-style: dashed;
   background-image: repeating-linear-gradient(
     135deg,
-    rgba(230, 227, 221, 0.07) 0 4px,
+    color-mix(in srgb, var(--onyx) 11%, transparent) 0 4px,
     transparent 4px 8px
   );
 }
@@ -517,7 +627,7 @@
   font-size: 0.5625rem;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
-  color: rgba(230, 227, 221, 0.7);
+  color: var(--cal-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -541,7 +651,7 @@
   left: 0;
   right: 0;
   height: 0;
-  border-top: 1px solid #e04f3d;
+  border-top: 1px solid var(--cal-now);
   pointer-events: none;
   z-index: 3;
 }
@@ -554,7 +664,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #e04f3d;
+  background: var(--cal-now);
 }
 
 .cal-now-label {
@@ -565,7 +675,7 @@
   padding: 0 3px;
   font-size: 0.5625rem;
   font-variant-numeric: tabular-nums;
-  color: #e04f3d;
+  color: var(--cal-now);
   background: var(--cal-bg);
   white-space: nowrap;
 }
@@ -573,30 +683,62 @@
 /* --------------------------------------------------------------------------
  * Tone palette — kinds, plus the imported-from-Google treatment.
  * Muted on purpose: this is a private cockpit, not a highlighter set.
+ *
+ * These are the OLD values darkened onto the light ground. Each is used two
+ * ways: as a 2px left edge (a non-text UI component, so it has to clear 3:1)
+ * and as the 16% wash behind the chip. The previous set was tuned to glow on
+ * near-black and sat at roughly 2:1 on stone — the edges simply vanished.
+ * Every value below is between 4.5:1 and 6:1 against #E6E3DD, so the eight
+ * kinds stay distinguishable from each other AND from the page.
  * ------------------------------------------------------------------------ */
 
-[data-tone='private'] {
+.cal [data-tone='private'] {
+  --tone: #7a5e29;
+}
+.cal [data-tone='partner'] {
+  --tone: #6b6144;
+}
+.cal [data-tone='clinic'] {
+  --tone: #4f5c58;
+}
+.cal [data-tone='workout'] {
+  --tone: #5c5166;
+}
+.cal [data-tone='camp'] {
+  --tone: #8a6a28;
+}
+.cal [data-tone='group'] {
+  --tone: #45525e;
+}
+.cal [data-tone='claimed'] {
+  --tone: #5c5138;
+}
+.cal [data-tone='google'] {
+  --tone: #565b60;
+}
+
+.ops-dark .cal [data-tone='private'] {
   --tone: #c8a25b;
 }
-[data-tone='partner'] {
+.ops-dark .cal [data-tone='partner'] {
   --tone: #9a8f6f;
 }
-[data-tone='clinic'] {
+.ops-dark .cal [data-tone='clinic'] {
   --tone: #7d8a86;
 }
-[data-tone='workout'] {
+.ops-dark .cal [data-tone='workout'] {
   --tone: #8a7f93;
 }
-[data-tone='camp'] {
+.ops-dark .cal [data-tone='camp'] {
   --tone: #a8853f;
 }
-[data-tone='group'] {
+.ops-dark .cal [data-tone='group'] {
   --tone: #6f7d8a;
 }
-[data-tone='claimed'] {
+.ops-dark .cal [data-tone='claimed'] {
   --tone: #86795d;
 }
-[data-tone='google'] {
+.ops-dark .cal [data-tone='google'] {
   --tone: #5f6469;
 }
 
@@ -608,7 +750,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(8, 8, 8, 0.62);
+  background: var(--cal-scrim);
   animation: cal-fade 300ms var(--cal-ease) both;
 }
 
@@ -630,7 +772,8 @@
   display: flex;
   flex-direction: column;
   max-height: 88vh;
-  background: #141414;
+  background: var(--cal-raise);
+  color: var(--cal-ink);
   border-top: 1px solid var(--cal-line-strong);
   animation: cal-sheet-up 620ms var(--cal-ease) both;
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -736,7 +879,7 @@
   width: 100%;
   min-height: 44px;
   padding: 0.6rem 0.7rem;
-  background: #101010;
+  background: var(--cal-bg);
   border: 1px solid var(--cal-line-strong);
   color: var(--cal-ink);
   font-family: inherit;
@@ -777,18 +920,346 @@
 .cal-input:focus-visible,
 .cal-select:focus-visible,
 .cal-textarea:focus-visible {
-  outline: 2px solid var(--cal-gold);
+  outline: 2px solid var(--focus-ring, var(--cal-accent));
   outline-offset: 2px;
 }
 
 .cal-error {
   margin-top: 0.35rem;
   font-size: 0.6875rem;
-  color: #e08a7d;
+  color: var(--cal-bad);
 }
 
 .cal-input[aria-invalid='true'] {
-  border-color: #e08a7d;
+  border-color: var(--cal-bad);
+}
+
+/* --------------------------------------------------------------------------
+ * THE SESSION FORM
+ *
+ * Jesse logs sessions on a phone, in a gym, between matches. Every control
+ * below is a 44px target, one-thumb reachable, and selectable rather than
+ * typeable — his book fractured into 'STRENGTH' vs 'Strength & Conditioning'
+ * precisely because the columns were free text.
+ *
+ * Contrast, measured on the raised stone ground:
+ *   chip label     var(--cal-ink)    13.59:1
+ *   chip meta      var(--cal-dim)     5.38:1
+ *   selected chip  onyx on gold       7.95:1  — gold is a PLATE, never a letter
+ * ------------------------------------------------------------------------ */
+
+.cal-group {
+  margin-bottom: 1.15rem;
+}
+
+/* The live receipt above the form. If this line reads correctly he can submit
+   without checking a single control under it. */
+.cal-receipt {
+  margin-bottom: 1.15rem;
+  padding: 0.6rem 0.7rem;
+  border-left: 2px solid var(--cal-accent);
+  background: var(--cal-sunken);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  color: var(--cal-ink);
+}
+
+/* A chip row. Wraps rather than scrolls: a horizontal scroller hides options,
+   and hiding the vocabulary is the whole failure this screen exists to fix. */
+.cal-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.35rem;
+}
+
+.cal-chips[data-compact='true'] {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.cal-chipbtn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  /* Never wider than the sheet: at 390px a long label must wrap, not push the
+     page into a horizontal scroll. */
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  border: 1px solid var(--cal-line-strong);
+  background: none;
+  color: var(--cal-ink);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 300ms var(--cal-ease),
+    background-color 300ms var(--cal-ease);
+}
+
+.cal-chips[data-compact='true'] .cal-chipbtn {
+  flex: 0 0 auto;
+  align-items: center;
+  text-align: center;
+}
+
+.cal-chipbtn:hover {
+  border-color: var(--cal-accent);
+}
+
+.cal-chipbtn-label {
+  font-size: 0.78125rem;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+
+.cal-chipbtn-meta {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--cal-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The invented-vocabulary mark: an entry JV Gold added to hold a real value
+   his Lists sheet had no home for. Marked, never hidden. */
+.cal-chipbtn-mark {
+  margin-left: 0.15rem;
+  color: var(--cal-accent);
+}
+
+/* SELECTED — a gold plate carrying onyx, the same move .ops-chip makes. Gold
+   text on stone would be 1.87:1; gold as a ground with onyx on it is 7.95:1. */
+.cal-chipbtn[aria-checked='true'],
+.cal-chipbtn[aria-pressed='true'] {
+  border-color: var(--gold-deep);
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
+  font-weight: 600;
+}
+
+.cal-chipbtn[aria-checked='true'] .cal-chipbtn-meta,
+.cal-chipbtn[aria-pressed='true'] .cal-chipbtn-meta,
+.cal-chipbtn[aria-checked='true'] .cal-chipbtn-mark {
+  color: var(--cal-plate-ink);
+}
+
+.cal-chips[data-invalid='true'] .cal-chipbtn,
+.cal-roster[data-invalid='true'] .cal-person {
+  border-color: var(--cal-bad);
+}
+
+.cal-chipbtn:focus-visible,
+.cal-person:focus-visible,
+.cal-step-btn:focus-visible,
+.cal-textlink:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--cal-accent));
+  outline-offset: 2px;
+}
+
+/* A footnote under a group. This is where a preserved raw cell surfaces. */
+.cal-foot {
+  margin-top: 0.4rem;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--cal-dim);
+}
+
+.cal-raw {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  color: var(--cal-accent);
+}
+
+.cal-textlink {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--cal-accent);
+  font: inherit;
+  font-size: 0.6875rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* --- the roster picker ---------------------------------------------------
+   A picker, never a text field: typing filters and can never create a name. */
+
+.cal-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.35rem;
+}
+
+.cal-person {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 52px;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border: 1px solid var(--cal-line-strong);
+  background: none;
+  color: var(--cal-ink);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 300ms var(--cal-ease),
+    background-color 300ms var(--cal-ease);
+}
+
+.cal-person:hover {
+  border-color: var(--cal-accent);
+}
+
+.cal-person-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--cal-line-strong);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cal-dim);
+}
+
+.cal-person-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cal-person-name {
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-person-meta {
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  color: var(--cal-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-person[aria-checked='true'] {
+  border-color: var(--gold-deep);
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
+}
+
+.cal-person[aria-checked='true'] .cal-person-meta {
+  color: var(--cal-plate-ink);
+}
+
+.cal-person[aria-checked='true'] .cal-person-mark {
+  border-color: var(--onyx-deep);
+  color: var(--cal-plate-ink);
+}
+
+/* --- stepper: his one counting column ----------------------------------- */
+
+.cal-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--cal-line-strong);
+}
+
+.cal-step-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  min-height: 48px;
+  background: none;
+  border: 0;
+  color: var(--cal-ink);
+  cursor: pointer;
+  transition: color 300ms var(--cal-ease);
+}
+
+.cal-step-btn:hover:not([disabled]) {
+  color: var(--cal-accent);
+}
+
+.cal-step-btn[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cal-step-value {
+  width: 56px;
+  min-height: 48px;
+  padding: 0;
+  text-align: center;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--cal-line);
+  border-right: 1px solid var(--cal-line);
+  color: var(--cal-ink);
+  font-family: inherit;
+  font-size: 1rem;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}
+
+.cal-step-value:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--cal-accent));
+  outline-offset: -2px;
+}
+
+/* --- money: chips first, keypad second ---------------------------------- */
+
+.cal-money {
+  display: flex;
+  align-items: stretch;
+  margin-top: 0.4rem;
+  border: 1px solid var(--cal-line-strong);
+  background: var(--cal-bg);
+}
+
+.cal-money-prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  flex: none;
+  color: var(--cal-dim);
+  font-size: 0.875rem;
+  cursor: text;
+}
+
+.cal-money-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem 0.5rem 0;
+  background: none;
+  border: 0;
+  color: var(--cal-ink);
+  font-family: inherit;
+  /* 16px floor: iOS zooms the whole page when a focused input is smaller. */
+  font-size: 1rem;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}
+
+.cal-money-input:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--cal-accent));
+  outline-offset: -2px;
 }
 
 /* Athlete multi-select rendered as toggle pills — a native multiple select is
@@ -813,14 +1284,153 @@
     border-color 300ms var(--cal-ease);
 }
 
+/* Selected athlete: a gold plate carrying onyx, which is the same move the
+   .ops-chip makes. Gold outline + gold text would be 1.87:1. */
 .cal-pill[aria-pressed='true'] {
-  border-color: var(--cal-gold);
-  color: var(--cal-gold);
+  border-color: var(--gold-deep);
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
 }
 
 .cal-pill[disabled] {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+ * SETTLEMENT SELECTOR
+ *
+ * A stacked radiogroup rather than a chip row: each option carries a full line
+ * of consequence underneath it, and consequence lines do not wrap sensibly in a
+ * horizontal chip. One column on a phone, two from 560px.
+ *
+ * A blocked option is DIMMED, not removed, and keeps its own reason in place of
+ * its consequence — same box, same position, different sentence. It is rendered
+ * with aria-disabled rather than [disabled] so the reason is still announced,
+ * which is why the "not-allowed" cursor is set here instead of coming free.
+ * ------------------------------------------------------------------------ */
+
+.cal-settle {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  margin-top: 0.55rem;
+  background: var(--cal-line);
+  border: 1px solid var(--cal-line);
+}
+
+@media (min-width: 560px) {
+  .cal-settle {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cal-settle-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 64px;
+  padding: 0.8rem 0.9rem;
+  background: var(--cal-bg);
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 400ms var(--cal-ease),
+    box-shadow 400ms var(--cal-ease);
+}
+
+.cal-settle-btn:hover:not([data-blocked='true']) {
+  background: var(--cal-hover);
+}
+
+.cal-settle-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--cal-ink);
+}
+
+.cal-settle-why {
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--cal-dim);
+}
+
+.cal-settle-balance {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--cal-accent);
+}
+
+/* Selected reads as a gold PLATE with onyx type on it — never gold type. */
+.cal-settle-btn[aria-checked='true'] {
+  background: var(--cal-plate);
+  box-shadow: inset 3px 0 0 var(--cal-ink);
+}
+
+.cal-settle-btn[aria-checked='true'] .cal-settle-label,
+.cal-settle-btn[aria-checked='true'] .cal-settle-why,
+.cal-settle-btn[aria-checked='true'] .cal-settle-balance {
+  color: var(--cal-plate-ink);
+}
+
+/* Blocked: visibly present, visibly unavailable, and still readable. The
+   reason has to pass contrast — it is the only thing that explains the box. */
+.cal-settle-btn[data-blocked='true'] {
+  background: var(--cal-sunken);
+  cursor: not-allowed;
+}
+
+.cal-settle-btn[data-blocked='true'] .cal-settle-label {
+  color: var(--cal-dim);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.cal-settle-btn[data-blocked='true'] .cal-settle-why {
+  color: var(--cal-bad);
+}
+
+.cal-settle-btn:focus-visible {
+  outline: 2px solid var(--cal-accent);
+  outline-offset: -2px;
+}
+
+/* The COMPED note. Bordered on one side only — a callout, not a card. */
+.cal-comped {
+  border-left: 2px solid var(--cal-accent);
+  padding: 0.55rem 0 0.55rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--cal-dim);
+}
+
+.cal-comped strong {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cal-ink);
+}
+
+/* Shopify link state on the invoice panel. */
+.cal-linkstate {
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--cal-dim);
+}
+
+.cal-linkstate[data-linked='true'] {
+  color: var(--cal-ink);
+}
+
+.cal-linkstate[data-linked='false'] {
+  color: var(--cal-bad);
+}
+
+.cal-invoice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -831,8 +1441,8 @@
   flex: 1 1 auto;
   min-height: 48px;
   padding: 0 1.1rem;
-  background: var(--cal-gold);
-  color: #111111;
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
   border: 0;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -843,12 +1453,13 @@
 }
 
 .cal-primary:hover {
-  background: #d8b273;
+  background: var(--cal-ink);
+  color: var(--cal-bg);
 }
 
 .cal-primary[disabled] {
-  background: #3a3a3a;
-  color: var(--cal-faint);
+  background: color-mix(in srgb, var(--onyx) 12%, transparent);
+  color: var(--cal-dim);
   cursor: not-allowed;
 }
 
@@ -866,8 +1477,8 @@
 }
 
 .cal-ghost:hover {
-  border-color: var(--cal-gold);
-  color: var(--cal-gold);
+  border-color: var(--cal-accent);
+  color: var(--cal-accent);
 }
 
 /* Floating add button. Clears the iOS home indicator. */
@@ -882,10 +1493,10 @@
   width: 56px;
   height: 56px;
   border: 0;
-  background: var(--cal-gold);
-  color: #111111;
+  background: var(--cal-plate);
+  color: var(--cal-plate-ink);
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--onyx) 22%, transparent);
   transition: transform 500ms var(--cal-ease);
 }
 
@@ -908,7 +1519,7 @@
   font-size: 0.5625rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cal-gold-deep);
+  color: var(--cal-accent);
 }
 
 .cal-local::before {
@@ -916,7 +1527,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--cal-gold);
+  background: var(--cal-accent);
 }
 
 .cal-state {
@@ -938,7 +1549,7 @@
 }
 
 .cal-state[data-state='disconnected']::before {
-  background: #8a5a52;
+  background: var(--cal-bad);
 }
 
 .cal-scope {
@@ -953,7 +1564,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.625rem;
   letter-spacing: 0.02em;
-  color: var(--cal-gold-deep);
+  color: var(--cal-accent);
 }
 
 /* --------------------------------------------------------------------------

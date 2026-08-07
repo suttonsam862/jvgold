@@ -1,23 +1,30 @@
 import {useRef, useState} from 'react';
+import {RenewalDisclosure} from './RenewalDisclosure';
 import {
+  AGE_RANGE_OPTIONS,
+  DATE_FLEXIBILITY_OPTIONS,
   EMPTY_DETAILS,
   GRADE_OPTIONS,
+  SKILL_RANGE_OPTIONS,
   formatMoney,
+  rateCopy,
   validateDetails,
 } from '~/lib/offerings';
-import type {AthleteDetails, DetailErrors, Quote} from '~/lib/offerings';
+import type {DetailErrors, Quote, RequestDetails} from '~/lib/offerings';
 
 interface RequestFormProps {
   quote: Quote;
+  /** Camp bookings are made by a host, not a parent — different fields. */
+  host?: boolean;
   requireDepositTerms: boolean;
   depositTerms: string;
-  onSubmit: (details: AthleteDetails) => void;
+  onSubmit: (details: RequestDetails) => void;
   onBack: () => void;
 }
 
-type FieldName = keyof AthleteDetails;
+type FieldName = keyof RequestDetails;
 
-const FOCUS_ORDER: FieldName[] = [
+const ATHLETE_ORDER: FieldName[] = [
   'athleteName',
   'age',
   'grade',
@@ -25,21 +32,45 @@ const FOCUS_ORDER: FieldName[] = [
   'phone',
   'notes',
   'acceptsDepositTerms',
+  'acceptsAutoRenewal',
+];
+
+const HOST_ORDER: FieldName[] = [
+  'contactName',
+  'organisation',
+  'venue',
+  'athleteCount',
+  'ageRange',
+  'skillRange',
+  'dateFlexibility',
+  'email',
+  'phone',
+  'notes',
+  'acceptsDepositTerms',
+  // A camp is never sold on a term, so this can never fire on a host booking.
+  // It is listed only so the error summary stays in visual order if it ever is.
+  'acceptsAutoRenewal',
 ];
 
 export function RequestForm({
   quote,
+  host = false,
   requireDepositTerms,
   depositTerms,
   onSubmit,
   onBack,
 }: RequestFormProps) {
-  const [details, setDetails] = useState<AthleteDetails>(EMPTY_DETAILS);
+  const focusOrder = host ? HOST_ORDER : ATHLETE_ORDER;
+  const rate = rateCopy(quote);
+  // EMPTY_DETAILS seeds `acceptsAutoRenewal` false and nothing here may seed it
+  // otherwise: preselecting the 12-month PLAN is lawful, pre-checking the
+  // CONSENT to be charged for it is not.
+  const [details, setDetails] = useState<RequestDetails>(EMPTY_DETAILS);
   const [errors, setErrors] = useState<DetailErrors>({});
   const [showSummary, setShowSummary] = useState(false);
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
 
-  const setField = <K extends FieldName>(name: K, value: AthleteDetails[K]) => {
+  const setField = <K extends FieldName>(name: K, value: RequestDetails[K]) => {
     setDetails((prev) => ({...prev, [name]: value}));
     setErrors((prev) => {
       if (!prev[name]) return prev;
@@ -51,9 +82,14 @@ export function RequestForm({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const found = validateDetails(details, requireDepositTerms);
+    const found = validateDetails(details, {
+      requireDepositTerms,
+      host,
+      // Blocks submission until the auto-renewal has been agreed to on its own.
+      requireRenewalConsent: quote.requiresRenewalConsent,
+    });
     setErrors(found);
-    const invalid = FOCUS_ORDER.filter((f) => found[f]);
+    const invalid = focusOrder.filter((f) => found[f]);
     if (invalid.length > 0) {
       setShowSummary(true);
       fieldRefs.current[invalid[0]]?.focus();
@@ -79,7 +115,7 @@ export function RequestForm({
             {Object.keys(errors).length === 1 ? '' : 's'} to fix
           </p>
           <ul className="mt-3 flex flex-col gap-1">
-            {FOCUS_ORDER.filter((f) => errors[f]).map((f) => (
+            {focusOrder.filter((f) => errors[f]).map((f) => (
               <li key={f} className="text-xs leading-relaxed text-stone/75">
                 {errors[f]}
               </li>
@@ -89,65 +125,232 @@ export function RequestForm({
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field
-          label="Athlete name"
-          name="athleteName"
-          error={errors.athleteName}
-          className="sm:col-span-2"
-        >
-          <input
-            id="athleteName"
-            ref={(el) => {
-              fieldRefs.current.athleteName = el;
-            }}
-            className="bk-field"
-            type="text"
-            autoComplete="name"
-            placeholder="First and last"
-            value={details.athleteName}
-            aria-invalid={errors.athleteName ? true : undefined}
-            aria-describedby={describedBy('athleteName')}
-            onChange={(e) => setField('athleteName', e.target.value)}
-          />
-        </Field>
+        {host ? (
+          <>
+            <Field
+              label="Your name"
+              name="contactName"
+              error={errors.contactName}
+            >
+              <input
+                id="contactName"
+                ref={(el) => {
+                  fieldRefs.current.contactName = el;
+                }}
+                className="bk-field"
+                type="text"
+                autoComplete="name"
+                placeholder="First and last"
+                value={details.contactName}
+                aria-invalid={errors.contactName ? true : undefined}
+                aria-describedby={describedBy('contactName')}
+                onChange={(e) => setField('contactName', e.target.value)}
+              />
+            </Field>
 
-        <Field label="Age" name="age" error={errors.age}>
-          <input
-            id="age"
-            ref={(el) => {
-              fieldRefs.current.age = el;
-            }}
-            className="bk-field tabular"
-            type="text"
-            inputMode="numeric"
-            placeholder="14"
-            value={details.age}
-            aria-invalid={errors.age ? true : undefined}
-            aria-describedby={describedBy('age')}
-            onChange={(e) => setField('age', e.target.value)}
-          />
-        </Field>
+            <Field
+              label="Club, school or organisation"
+              name="organisation"
+              error={errors.organisation}
+            >
+              <input
+                id="organisation"
+                ref={(el) => {
+                  fieldRefs.current.organisation = el;
+                }}
+                className="bk-field"
+                type="text"
+                autoComplete="organization"
+                placeholder="Who is hosting"
+                value={details.organisation}
+                aria-invalid={errors.organisation ? true : undefined}
+                aria-describedby={describedBy('organisation')}
+                onChange={(e) => setField('organisation', e.target.value)}
+              />
+            </Field>
 
-        <Field label="Grade level" name="grade" error={errors.grade}>
-          <select
-            id="grade"
-            ref={(el) => {
-              fieldRefs.current.grade = el;
-            }}
-            className="bk-field"
-            value={details.grade}
-            aria-invalid={errors.grade ? true : undefined}
-            aria-describedby={describedBy('grade')}
-            onChange={(e) => setField('grade', e.target.value)}
-          >
-            <option value="">Select…</option>
-            {GRADE_OPTIONS.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </Field>
+            <Field
+              label="Venue & city"
+              name="venue"
+              error={errors.venue}
+              className="sm:col-span-2"
+              hint="Where the mats are. Exact address comes later."
+            >
+              <input
+                id="venue"
+                ref={(el) => {
+                  fieldRefs.current.venue = el;
+                }}
+                className="bk-field"
+                type="text"
+                placeholder="High school gym, Riverside CA"
+                value={details.venue}
+                aria-invalid={errors.venue ? true : undefined}
+                aria-describedby={describedBy('venue', 'venue-hint')}
+                onChange={(e) => setField('venue', e.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="Expected athletes"
+              name="athleteCount"
+              error={errors.athleteCount}
+              hint="An estimate is fine — the rate does not move with headcount."
+            >
+              <input
+                id="athleteCount"
+                ref={(el) => {
+                  fieldRefs.current.athleteCount = el;
+                }}
+                className="bk-field tabular"
+                type="text"
+                inputMode="numeric"
+                placeholder="60"
+                value={details.athleteCount}
+                aria-invalid={errors.athleteCount ? true : undefined}
+                aria-describedby={describedBy('athleteCount', 'athleteCount-hint')}
+                onChange={(e) => setField('athleteCount', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Age range" name="ageRange" error={errors.ageRange}>
+              <select
+                id="ageRange"
+                ref={(el) => {
+                  fieldRefs.current.ageRange = el;
+                }}
+                className="bk-field"
+                value={details.ageRange}
+                aria-invalid={errors.ageRange ? true : undefined}
+                aria-describedby={describedBy('ageRange')}
+                onChange={(e) => setField('ageRange', e.target.value)}
+              >
+                <option value="">Select…</option>
+                {AGE_RANGE_OPTIONS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="Skill range"
+              name="skillRange"
+              error={errors.skillRange}
+            >
+              <select
+                id="skillRange"
+                ref={(el) => {
+                  fieldRefs.current.skillRange = el;
+                }}
+                className="bk-field"
+                value={details.skillRange}
+                aria-invalid={errors.skillRange ? true : undefined}
+                aria-describedby={describedBy('skillRange')}
+                onChange={(e) => setField('skillRange', e.target.value)}
+              >
+                <option value="">Select…</option>
+                {SKILL_RANGE_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="How firm are the dates"
+              name="dateFlexibility"
+              error={errors.dateFlexibility}
+              hint="The block you picked on the calendar, and how far it can move."
+            >
+              <select
+                id="dateFlexibility"
+                ref={(el) => {
+                  fieldRefs.current.dateFlexibility = el;
+                }}
+                className="bk-field"
+                value={details.dateFlexibility}
+                aria-invalid={errors.dateFlexibility ? true : undefined}
+                aria-describedby={describedBy(
+                  'dateFlexibility',
+                  'dateFlexibility-hint',
+                )}
+                onChange={(e) => setField('dateFlexibility', e.target.value)}
+              >
+                <option value="">Select…</option>
+                {DATE_FLEXIBILITY_OPTIONS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </>
+        ) : (
+          <>
+            <Field
+              label="Athlete name"
+              name="athleteName"
+              error={errors.athleteName}
+              className="sm:col-span-2"
+            >
+              <input
+                id="athleteName"
+                ref={(el) => {
+                  fieldRefs.current.athleteName = el;
+                }}
+                className="bk-field"
+                type="text"
+                autoComplete="name"
+                placeholder="First and last"
+                value={details.athleteName}
+                aria-invalid={errors.athleteName ? true : undefined}
+                aria-describedby={describedBy('athleteName')}
+                onChange={(e) => setField('athleteName', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Age" name="age" error={errors.age}>
+              <input
+                id="age"
+                ref={(el) => {
+                  fieldRefs.current.age = el;
+                }}
+                className="bk-field tabular"
+                type="text"
+                inputMode="numeric"
+                placeholder="14"
+                value={details.age}
+                aria-invalid={errors.age ? true : undefined}
+                aria-describedby={describedBy('age')}
+                onChange={(e) => setField('age', e.target.value)}
+              />
+            </Field>
+
+            <Field label="Grade level" name="grade" error={errors.grade}>
+              <select
+                id="grade"
+                ref={(el) => {
+                  fieldRefs.current.grade = el;
+                }}
+                className="bk-field"
+                value={details.grade}
+                aria-invalid={errors.grade ? true : undefined}
+                aria-describedby={describedBy('grade')}
+                onChange={(e) => setField('grade', e.target.value)}
+              >
+                <option value="">Select…</option>
+                {GRADE_OPTIONS.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </>
+        )}
 
         <Field label="Email" name="email" error={errors.email}>
           <input
@@ -188,7 +391,11 @@ export function RequestForm({
           name="notes"
           error={errors.notes}
           className="sm:col-span-2"
-          hint="Weight class, goals, injuries, partner's name, team headcount — optional."
+          hint={
+            host
+              ? 'Mat count, session times, what the room needs most, travel and lodging — optional.'
+              : "Weight class, goals, injuries, partner's name, team headcount — optional."
+          }
         >
           <textarea
             id="notes"
@@ -241,6 +448,52 @@ export function RequestForm({
         </div>
       ) : null}
 
+      {/*
+       * AUTO-RENEWAL CONSENT.
+       *
+       * One separate, initially-unchecked affirmative action tied specifically
+       * to the recurring charge — not the general terms box, not folded into
+       * the submit button's fine print, and never pre-ticked. The disclosures
+       * sit immediately above it and again immediately above the billing
+       * figures below. Only rendered when a renewing term is actually selected:
+       * a one-off session must never be dressed up as a subscription.
+       */}
+      {quote.renewal ? (
+        <div className="flex flex-col gap-4 border-t bk-hairline pt-7">
+          <RenewalDisclosure renewal={quote.renewal} />
+          <label
+            className="bk-consent"
+            data-checked={details.acceptsAutoRenewal}
+            data-invalid={errors.acceptsAutoRenewal ? true : undefined}
+          >
+            <input
+              id="acceptsAutoRenewal"
+              ref={(el) => {
+                fieldRefs.current.acceptsAutoRenewal = el;
+              }}
+              type="checkbox"
+              checked={details.acceptsAutoRenewal}
+              aria-invalid={errors.acceptsAutoRenewal ? true : undefined}
+              aria-describedby={describedBy('acceptsAutoRenewal')}
+              onChange={(e) => setField('acceptsAutoRenewal', e.target.checked)}
+            />
+            <span>{quote.renewal.consentLabel}</span>
+          </label>
+          {errors.acceptsAutoRenewal ? (
+            <p
+              id="acceptsAutoRenewal-error"
+              className="text-xs leading-relaxed text-[#e08a72]"
+            >
+              {errors.acceptsAutoRenewal}
+            </p>
+          ) : null}
+          <p className="text-xs leading-relaxed text-stone/45">
+            {quote.renewal.cancelLine} Cancelling stops every future charge; the
+            months already paid for are yours to use.
+          </p>
+        </div>
+      ) : null}
+
       {/* The money, restated where the thumb is — the desktop rail is a long
           way from the submit button on a phone. */}
       <dl className="flex flex-col gap-2 border-t bk-hairline pt-6">
@@ -250,12 +503,22 @@ export function RequestForm({
           </dt>
           <dd className="display bk-money shrink-0 text-xl text-stone">
             {formatMoney(quote.dueNow)}
-            {quote.cadence === 'monthly' ? (
+            {rate.isMonthly ? (
               <span className="text-sm text-stone/50"> / month</span>
             ) : null}
           </dd>
         </div>
-        {quote.cadence === 'deposit' && quote.balance !== null ? (
+        {quote.plan ? (
+          <div className="flex items-baseline justify-between gap-4">
+            <dt className="text-[0.6rem] uppercase tracking-[0.18em] text-stone/45">
+              Then
+            </dt>
+            <dd className="bk-money shrink-0 text-right text-xs leading-relaxed text-stone/75">
+              {quote.plan.rateLabel} until cancelled
+            </dd>
+          </div>
+        ) : null}
+        {rate.isDeposit && quote.balance !== null ? (
           <>
             <div className="flex items-baseline justify-between gap-4">
               <dt className="text-[0.6rem] uppercase tracking-[0.18em] text-stone/45">
@@ -290,17 +553,15 @@ export function RequestForm({
           className="display min-h-[56px] bg-gold px-8 py-4 text-[0.75rem] tracking-[0.16em] text-onyx-deep transition-colors hover:bg-stone"
         >
           Send request · {formatMoney(quote.dueNow)}
-          {quote.cadence === 'monthly'
-            ? ' per month'
-            : quote.cadence === 'deposit'
-              ? ' deposit'
-              : ''}
+          {rate.isMonthly ? ' per month' : rate.isDeposit ? ' deposit' : ''}
         </button>
       </div>
 
       <p className="text-xs leading-relaxed text-stone/45">
-        Nothing is charged here. Jesse reviews every request personally and
-        confirms — with a payment link — within 24 hours.
+        {rate.billingLine} Nothing is charged here.{' '}
+        {host
+          ? 'Jesse reviews every camp request personally and confirms the dates — with an agreement and a deposit link — within 24 hours.'
+          : 'Jesse reviews every request personally and confirms — with a payment link — within 24 hours.'}
       </p>
     </form>
   );

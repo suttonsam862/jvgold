@@ -1,0 +1,184 @@
+/*
+ * /shop — the JV GOLD store.
+ *
+ * Plain CSS only; Tailwind utilities still do the layout in the JSX. What
+ * lives here is what utilities express badly: selection state on the size
+ * buttons, the paper plate the garment sits on, and motion — which is always
+ * opt-in and always neutralised under prefers-reduced-motion.
+ */
+
+.shop {
+  --sh-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --sh-dur: 720ms;
+  --sh-dur-fast: 260ms;
+  --sh-gold: var(--gold, #c8a25b);
+  --sh-gold-deep: var(--gold-deep, #a8823f);
+  --sh-ink: var(--onyx, #1a1a1a);
+}
+
+/* ---------- focus: legible on stone, on onyx and over photography ---------- */
+.shop :where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--sh-gold-deep);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+.shop-dark :where(a, button, input, select, [tabindex]):focus-visible {
+  outline-color: var(--sh-gold);
+}
+
+/* ---------- the plate the garment is presented on ----------
+   A sheet of warm paper with a hairline edge and a soft floor shadow, so a
+   600px mockup reads as an object rather than a stretched JPEG. */
+.sh-plate {
+  position: relative;
+  background:
+    radial-gradient(
+      120% 90% at 50% 12%,
+      color-mix(in srgb, #ffffff 70%, transparent) 0%,
+      transparent 62%
+    ),
+    var(--stone-warm, #eeebe4);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #1a1a1a 8%, transparent);
+}
+
+.sh-plate::after {
+  /* the shadow the garment casts on the paper */
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 7%;
+  height: 3%;
+  border-radius: 50%;
+  background: color-mix(in srgb, #1a1a1a 18%, transparent);
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+.sh-plate-dark {
+  background:
+    radial-gradient(
+      120% 90% at 50% 10%,
+      color-mix(in srgb, #ffffff 9%, transparent) 0%,
+      transparent 64%
+    ),
+    var(--onyx, #1a1a1a);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 10%, transparent);
+}
+
+.sh-plate-dark::after {
+  background: color-mix(in srgb, #000000 55%, transparent);
+}
+
+.sh-garment {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 480px;
+  margin-inline: auto;
+  transition: transform var(--sh-dur) var(--sh-ease);
+}
+
+.sh-plate-link:hover .sh-garment,
+.sh-plate-link:focus-visible .sh-garment {
+  transform: scale(1.018);
+}
+
+/* ---------- size selector ----------
+   Real buttons in a real radiogroup. Neutral by default: available sizes get
+   no badge, no count, no urgency — only sold-out is called out, and only when
+   the inventory constant actually says so. */
+.sh-size {
+  position: relative;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.85rem 0.5rem;
+  border: 1px solid color-mix(in srgb, #1a1a1a 22%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color var(--sh-dur-fast) var(--sh-ease),
+    background-color var(--sh-dur-fast) var(--sh-ease),
+    color var(--sh-dur-fast) var(--sh-ease);
+}
+
+.sh-size:hover:not([aria-disabled='true']) {
+  border-color: color-mix(in srgb, #1a1a1a 55%, transparent);
+}
+
+.sh-size[aria-checked='true'] {
+  background: var(--onyx, #1a1a1a);
+  border-color: var(--onyx, #1a1a1a);
+  color: var(--stone, #e6e3dd);
+}
+
+.sh-size[aria-disabled='true'] {
+  cursor: not-allowed;
+  color: color-mix(in srgb, #1a1a1a 38%, transparent);
+  border-color: color-mix(in srgb, #1a1a1a 10%, transparent);
+}
+
+/* a single hairline struck through the sold-out sizes */
+.sh-size[aria-disabled='true']::before {
+  content: '';
+  position: absolute;
+  inset: auto 12% auto 12%;
+  top: 50%;
+  height: 1px;
+  background: color-mix(in srgb, #1a1a1a 28%, transparent);
+}
+
+/* ---------- coming soon plates ----------
+   Unnamed by design. A slow gold sweep on hover, nothing more. */
+.sh-soon {
+  position: relative;
+  overflow: hidden;
+}
+
+.sh-soon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    color-mix(in srgb, var(--sh-gold) 12%, transparent) 50%,
+    transparent 62%
+  );
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sh-soon:hover::after,
+.sh-soon:focus-within::after {
+  animation: sh-sweep 1400ms var(--sh-ease) forwards;
+}
+
+@keyframes sh-sweep {
+  from {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 1;
+  }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .shop *,
+  .shop *::after,
+  .shop *::before {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .sh-plate-link:hover .sh-garment,
+  .sh-plate-link:focus-visible .sh-garment {
+    transform: none;
+  }
+}

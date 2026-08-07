@@ -83,6 +83,18 @@ export async function loader(args) {
     ...deferredData,
     ...criticalData,
     publicStoreDomain: env.PUBLIC_STORE_DOMAIN,
+    // PUBLIC values only, and they are awaited (never deferred) because the
+    // login screens need them on first paint to decide whether to show the
+    // real Supabase door or the demo fallback.
+    //
+    // DO NOT ADD SUPABASE_SERVICE_ROLE_KEY OR SUPABASE_DB_URL HERE. Both
+    // bypass row-level security; anything in this object is embedded in the
+    // HTML document and readable by anyone who views source. The anon key
+    // below is public by design — RLS is what protects the data.
+    publicEnv: {
+      supabaseUrl: env.PUBLIC_SUPABASE_URL ?? null,
+      supabaseAnonKey: env.PUBLIC_SUPABASE_ANON_KEY ?? null,
+    },
     shop: getShopAnalytics({
       storefront,
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,

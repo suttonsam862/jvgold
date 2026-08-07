@@ -184,6 +184,21 @@
   opacity: 0;
 }
 
+/* The camp block is selectable as well as filled — hovering a day already in
+   the block must not wash the block's own colour out from under it. */
+.bk-cell[data-selectable='true'][data-span='inside']:hover {
+  background: color-mix(in srgb, #c8a25b 30%, transparent);
+  box-shadow: inset 0 0 0 1px var(--bk-gold);
+  color: #fff;
+}
+
+.bk-cell[data-selectable='true'][data-span='start']:hover,
+.bk-cell[data-selectable='true'][data-span='end']:hover {
+  background: color-mix(in srgb, #c8a25b 88%, #ffffff);
+  box-shadow: inset 0 0 0 1px var(--bk-gold);
+  color: var(--bk-ink);
+}
+
 /* Generated recurring package dates */
 .bk-cell[data-pattern='true'] {
   background: color-mix(in srgb, #c8a25b 16%, transparent);
@@ -234,6 +249,208 @@
   .bk-option:hover:not(:disabled) {
     transform: translateY(-2px);
   }
+}
+
+/* ---------- subscription term chips ----------
+   Two up at 390px, four up from the small breakpoint. Every chip is a real
+   button with its own rate, and the selected one is a gold plate with ink type
+   on it — brand gold is a fill here, never a text colour. */
+.bk-terms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .bk-terms {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.bk-term {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 84px;
+  padding: 0.85rem 0.9rem;
+  text-align: left;
+  border: 1px solid var(--bk-line-strong);
+  background: var(--bk-surface);
+  color: color-mix(in srgb, #e6e3dd 78%, transparent);
+  transition:
+    border-color var(--bk-dur-fast) var(--bk-ease),
+    background-color var(--bk-dur-fast) var(--bk-ease),
+    color var(--bk-dur-fast) var(--bk-ease);
+}
+
+.bk-term:hover {
+  border-color: color-mix(in srgb, #c8a25b 70%, transparent);
+  background: var(--bk-surface-raised);
+}
+
+.bk-term[aria-pressed='true'] {
+  background: var(--bk-gold);
+  border-color: var(--bk-gold);
+  color: var(--bk-ink);
+}
+
+.bk-term-name {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.bk-term-rate {
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.bk-term-note {
+  margin-top: auto;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bk-gold);
+}
+
+.bk-term[aria-pressed='true'] .bk-term-note {
+  color: color-mix(in srgb, #111111 78%, transparent);
+}
+
+.bk-term-flag {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  padding: 3px 6px;
+  background: var(--bk-gold);
+  color: var(--bk-ink);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+
+.bk-term[aria-pressed='true'] .bk-term-flag {
+  background: var(--bk-ink);
+  color: var(--bk-gold);
+}
+
+.bk-term-summary {
+  color: color-mix(in srgb, #f2efe9 78%, transparent);
+}
+
+/* The term note on an offering card. */
+.bk-card-term {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bk-card-term-badge {
+  border: 1px solid color-mix(in srgb, #c8a25b 45%, transparent);
+  background: color-mix(in srgb, #c8a25b 12%, transparent);
+  padding: 3px 7px;
+  color: var(--bk-gold);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- auto-renewal disclosure ----------
+   California's ARL and federal ROSCA both require these facts to be "clear and
+   conspicuous": set off, contrasting, larger than the body copy around it. That
+   is a legal requirement, not a styling preference — do not quietly demote this
+   block to the 0.65rem / 45% opacity the fine print around it uses. */
+.bk-disclose {
+  border: 1px solid color-mix(in srgb, #c8a25b 38%, transparent);
+  border-left: 3px solid var(--bk-gold);
+  background: color-mix(in srgb, #c8a25b 9%, transparent);
+  padding: 1.05rem 1.15rem;
+}
+
+.bk-disclose-tag {
+  color: var(--bk-gold);
+}
+
+.bk-disclose-head {
+  color: #ffffff;
+  font-size: 0.98rem;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+}
+
+.bk-disclose-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  list-style: none;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, #f2efe9 90%, transparent);
+}
+
+.bk-disclose-list li {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.bk-disclose-list li::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 9px;
+  margin-top: 0.45rem;
+  background: var(--bk-gold);
+  transform: skewX(-30deg);
+}
+
+/* ---------- auto-renewal consent ----------
+   A separate affirmative action, initially unchecked, and a genuine touch
+   target: the whole row is the control and the box itself is 24px. */
+.bk-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  min-height: 60px;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--bk-line-strong);
+  background: var(--bk-surface);
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, #f2efe9 82%, transparent);
+  transition:
+    border-color var(--bk-dur-fast) var(--bk-ease),
+    background-color var(--bk-dur-fast) var(--bk-ease),
+    color var(--bk-dur-fast) var(--bk-ease);
+}
+
+.bk-consent:hover {
+  border-color: color-mix(in srgb, #c8a25b 60%, transparent);
+}
+
+.bk-consent[data-checked='true'] {
+  border-color: var(--bk-gold);
+  background: color-mix(in srgb, #c8a25b 10%, transparent);
+  color: #f2efe9;
+}
+
+.bk-consent[data-invalid='true'] {
+  border-color: #d9694f;
+  background: color-mix(in srgb, #d9694f 8%, transparent);
+}
+
+.bk-consent input[type='checkbox'] {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-top: 0.1rem;
+  accent-color: var(--bk-gold);
+  cursor: pointer;
 }
 
 /* ---------- offering cards ---------- */

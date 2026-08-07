@@ -6,6 +6,7 @@ const links = [
   {to: '/deep-waters', label: 'DEEP WATERS'},
   {to: '/train', label: 'TRAIN WITH JESSE'},
   {to: '/future-champions', label: 'FUTURE CHAMPIONS'},
+  {to: '/shop', label: 'SHOP'},
   {to: '/private', label: 'PRIVATE ACCESS'},
 ];
 

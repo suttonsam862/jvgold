@@ -17,11 +17,23 @@ export default async function handleRequest(
   reactRouterContext,
   context,
 ) {
+  // Supabase auth + data. The policy stays same-origin apart from this one
+  // project: the exact URL from the environment, plus its wss:// twin for
+  // realtime. When the env var is missing we fall back to the *.supabase.co
+  // wildcard so a preview deploy without the var set still functions.
+  const supabaseUrl = (context.env.PUBLIC_SUPABASE_URL ?? '')
+    .trim()
+    .replace(/\/+$/, '');
+  const supabaseHosts = supabaseUrl
+    ? [supabaseUrl, supabaseUrl.replace(/^https:/, 'wss:')]
+    : ['https://*.supabase.co', 'wss://*.supabase.co'];
+
   const {nonce, header, NonceProvider} = createContentSecurityPolicy({
     shop: {
       checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
       storeDomain: context.env.PUBLIC_STORE_DOMAIN,
     },
+    connectSrc: ["'self'", ...supabaseHosts],
   });
 
   const body = await renderToReadableStream(

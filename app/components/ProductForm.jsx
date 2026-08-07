@@ -1,5 +1,6 @@
 import {Link, useNavigate} from 'react-router';
 import {AddToCartButton} from './AddToCartButton';
+import {SellingPlanSelector} from './SellingPlanSelector';
 import {useAside} from './Aside';
 
 const OPTION_BASE =
@@ -27,11 +28,22 @@ function optionClass({selected, available}) {
  * @param {{
  *   productOptions: MappedProductOptions[];
  *   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
+ *   sellingPlans?: SellingPlanState;
  * }}
  */
-export function ProductForm({productOptions, selectedVariant}) {
+export function ProductForm({productOptions, selectedVariant, sellingPlans}) {
   const navigate = useNavigate();
   const {open} = useAside();
+
+  // A product with no selling plans (every product today) yields a state whose
+  // `hasPlans` is false: the selector renders nothing, no consent is required,
+  // and the cart line carries no `sellingPlanId`. Plain one-off purchase, no
+  // dead controls.
+  const hasPlans = Boolean(sellingPlans?.hasPlans);
+  const sellingPlanId = sellingPlans?.sellingPlanId;
+  const purchaseBlockedReason = sellingPlans?.purchaseBlockedReason ?? null;
+  const soldOut = !selectedVariant || !selectedVariant.availableForSale;
+  const disabled = soldOut || purchaseBlockedReason !== null;
 
   return (
     <div>
@@ -105,25 +117,50 @@ export function ProductForm({productOptions, selectedVariant}) {
         );
       })}
 
+      {sellingPlans ? <SellingPlanSelector state={sellingPlans} /> : null}
+
+      {/*
+        The reason the button is dead, stated next to the button rather than
+        hidden on it — a disabled control cannot take focus, so it can never
+        announce its own aria-describedby.
+      */}
+      {purchaseBlockedReason && !soldOut ? (
+        <p
+          role="status"
+          className="mb-4 border-l-2 border-gold-deep py-1 pl-4 text-sm leading-relaxed text-onyx"
+        >
+          {purchaseBlockedReason}
+        </p>
+      ) : null}
+
       <div className="jv-atc">
         <AddToCartButton
-          disabled={!selectedVariant || !selectedVariant.availableForSale}
+          disabled={disabled}
           onClick={() => {
             open('cart');
           }}
           lines={
-            selectedVariant
+            selectedVariant && !disabled
               ? [
                   {
                     merchandiseId: selectedVariant.id,
                     quantity: 1,
                     selectedVariant,
+                    // AddToCartButton forwards `lines` untouched to
+                    // CartForm.ACTIONS.LinesAdd, so attaching the plan here is
+                    // all that is needed. Undefined on a one-off purchase, and
+                    // undefined is simply absent once the line is serialised.
+                    ...(sellingPlanId ? {sellingPlanId} : {}),
                   },
                 ]
               : []
           }
         >
-          {selectedVariant?.availableForSale ? 'Add to cart' : 'Sold out'}
+          {soldOut
+            ? 'Sold out'
+            : hasPlans && sellingPlanId
+              ? 'Subscribe'
+              : 'Add to cart'}
         </AddToCartButton>
       </div>
 
@@ -162,6 +199,7 @@ function ProductOptionSwatch({swatch, name}) {
   );
 }
 
+/** @typedef {import('./SellingPlanSelector').SellingPlanState} SellingPlanState */
 /** @typedef {import('@shopify/hydrogen').MappedProductOptions} MappedProductOptions */
 /** @typedef {import('@shopify/hydrogen/storefront-api-types').Maybe} Maybe */
 /** @typedef {import('@shopify/hydrogen/storefront-api-types').ProductOptionValueSwatch} ProductOptionValueSwatch */

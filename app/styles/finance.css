@@ -16,14 +16,70 @@
    One block at the bottom neutralises every transition on this page. Nothing
    here animates anything but transform and opacity, so there is nothing that
    needs a second mechanism.
+
+   WHY THE TOKENS MOVED OFF :root
+   They used to be declared on :root, which meant (a) five global custom
+   properties leaked out of a route-scoped stylesheet onto every page that
+   happened to load it, and (b) the money view could not be register-switched
+   at all — there was no element to re-bind them on. They now live on
+   `.fin-page`, the class <Screen> carries as its rootClassName, and the
+   `.ops-dark` block below re-binds the same names for a near-black ground.
+
+   THE CONTRAST CONSTRAINT, measured on the warm stone ground #E6E3DD:
+     --fin-ink    #1A1A1A   13.59:1  figures, rank labels, table values
+     --fin-mute   #5A5A5A    5.38:1  captions, axis labels, summaries, meta
+     --fin-accent #7A5E29    4.73:1  gold's VOICE as type (bronze)
+   Gold stays literal ONLY where it is a filled AREA read against its own
+   neighbours: the best bar in a chart, the leading rank fill, the sparkline
+   and the cumulative line. Every gold LETTERFORM on this page — the leading
+   value, the good delta, the active period tab, the summary hover — is bronze,
+   because gold type on stone is 1.87:1.
    ========================================================================== */
 
-:root {
+.fin-page {
   --fin-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The canonical <Panel> reads this for the gap between its label rule and
+     its body. The finance copy hard-coded pt-8; this preserves that rhythm
+     while the charts sit inside the shared primitive. */
+  --ops-panel-gap: 2rem;
+
+  --fin-ink: var(--ink, #1a1a1a);
+  --fin-mute: var(--ink-mute, #5a5a5a);
+  --fin-accent: var(--ink-accent, #7a5e29);
+  --fin-bad: var(--ink-warn, #9a3412);
+
+  --fin-surface: var(--surface, #e6e3dd);
+  --fin-hairline: color-mix(in srgb, var(--onyx) 13%, transparent);
+  --fin-hairline-strong: color-mix(in srgb, var(--onyx) 26%, transparent);
+
+  /* Chart geometry. The neutral bar has to be told apart from the gold one AND
+     from the gridlines behind it, so it sits well clear of both. */
+  --fin-bar: color-mix(in srgb, var(--onyx) 38%, transparent);
+  --fin-bar-muted: color-mix(in srgb, var(--onyx) 14%, transparent);
+  --fin-rail: color-mix(in srgb, var(--onyx) 9%, transparent);
+  --fin-best: var(--gold, #c8a25b);
+  --fin-line: var(--ink-accent, #7a5e29);
+  --fin-area: color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.ops-dark.fin-page,
+.ops-dark .fin-page {
+  --fin-ink: #e6e3dd;
+  --fin-mute: #8c8c8c;
+  --fin-accent: #c8a25b;
+  --fin-bad: #e8886a;
+
+  --fin-surface: #111111;
   --fin-hairline: rgba(230, 227, 221, 0.12);
   --fin-hairline-strong: rgba(230, 227, 221, 0.22);
+
   --fin-bar: rgba(230, 227, 221, 0.18);
   --fin-bar-muted: rgba(230, 227, 221, 0.07);
+  --fin-rail: rgba(230, 227, 221, 0.06);
+  --fin-best: #c8a25b;
+  --fin-line: #c8a25b;
+  --fin-area: rgba(200, 162, 91, 0.1);
 }
 
 /* ------------------------------------------------------------------ a11y */
@@ -41,10 +97,12 @@
   border: 0;
 }
 
-/* Every interactive thing on this page gets the same visible gold ring. */
+/* Every interactive thing on this page gets the same visible ring — bronze on
+   stone, gold inside .ops-dark, because a gold ring on a light ground is
+   1.87:1 and therefore not a focus indicator at all. */
 .fin-switcher-btn:focus-visible,
 .fin-data > summary:focus-visible {
-  outline: 2px solid var(--gold, #c8a25b);
+  outline: 2px solid var(--focus-ring, var(--fin-accent));
   outline-offset: 3px;
 }
 
@@ -81,8 +139,12 @@
   border-block: 1px solid var(--fin-hairline);
 }
 
+/* The tile ground is the PAGE ground: the 1px gaps in the .fin-kpis grid are
+   what draw the hairline lattice, so this must track --surface rather than
+   name a colour. Naming #111111 here is what pinned the whole KPI row to the
+   dark register. */
 .fin-tile {
-  background: #111111;
+  background: var(--fin-surface);
   padding: 1.35rem 1rem 1.6rem;
   min-width: 0;
 }
@@ -156,16 +218,18 @@
   white-space: nowrap;
 }
 
+/* The chip's border is `currentcolor`, so these three values are carrying both
+   the type and the outline — neither survives at 1.87:1. */
 .fin-delta.is-good {
-  color: var(--gold, #c8a25b);
+  color: var(--fin-accent);
 }
 
 .fin-delta.is-bad {
-  color: #b8756a;
+  color: var(--fin-bad);
 }
 
 .fin-delta.is-flat {
-  color: #6b6b6b;
+  color: var(--fin-mute);
 }
 
 /* ------------------------------------------------------------ sparkline */
@@ -183,11 +247,11 @@
 }
 
 .fin-spark-area {
-  fill: rgba(200, 162, 91, 0.1);
+  fill: var(--fin-area);
 }
 
 .fin-spark-line {
-  stroke: var(--gold, #c8a25b);
+  stroke: var(--fin-line);
   stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -209,7 +273,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--gold, #c8a25b);
+  background: var(--fin-line);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -278,7 +342,7 @@
   padding-left: 0.6rem;
   font-size: 0.625rem;
   letter-spacing: 0.1em;
-  color: #6b6b6b;
+  color: var(--fin-mute);
   white-space: nowrap;
 }
 
@@ -305,9 +369,11 @@
   fill: var(--fin-bar-muted);
 }
 
-/* Exactly one gold bar: the strongest month inside the window. */
+/* Exactly one gold bar: the strongest month inside the window. Gold survives
+   as a fill here because it is read against the neutral bars beside it, not
+   against the page. */
 .fin-bar.is-best {
-  fill: var(--gold, #c8a25b);
+  fill: var(--fin-best);
 }
 
 /* --- axis labels ------------------------------------------------------ */
@@ -318,18 +384,21 @@
   padding-right: 3.25rem;
 }
 
+/* Inactive months are quieter, not illegible: the old rgba(107,107,107,.65)
+   landed near 2.8:1 on stone. This is a mix toward the ground, which keeps a
+   floor under it. */
 .fin-axis-label {
   text-align: center;
   font-size: 0.625rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(107, 107, 107, 0.65);
+  color: color-mix(in srgb, var(--fin-mute) 80%, var(--fin-surface));
   transition: color 600ms var(--fin-ease);
   min-width: 0;
 }
 
 .fin-axis-label.is-active {
-  color: #6b6b6b;
+  color: var(--fin-ink);
 }
 
 .fin-axis-ends {
@@ -340,20 +409,20 @@
   font-size: 0.625rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--fin-mute);
 }
 
 .fin-caption {
   margin-top: 1rem;
   font-size: 0.8125rem;
   line-height: 1.6;
-  color: #6b6b6b;
+  color: var(--fin-mute);
 }
 
 /* --- cumulative line -------------------------------------------------- */
 
 .fin-line {
-  stroke: var(--gold, #c8a25b);
+  stroke: var(--fin-line);
   stroke-width: 1.75;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -388,8 +457,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--gold, #c8a25b);
-  box-shadow: 0 0 0 4px rgba(200, 162, 91, 0.16);
+  background: var(--fin-line);
+  box-shadow: 0 0 0 4px var(--fin-area);
   transform: translate(-50%, -50%);
   pointer-events: none;
   opacity: 1;
@@ -409,7 +478,7 @@
 .fin-summary {
   font-size: 0.8125rem;
   line-height: 1.65;
-  color: #6b6b6b;
+  color: var(--fin-mute);
   margin-bottom: 1.75rem;
   max-width: 46ch;
 }
@@ -438,7 +507,7 @@
   width: 1.75rem;
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
-  color: rgba(107, 107, 107, 0.7);
+  color: color-mix(in srgb, var(--fin-mute) 82%, var(--fin-surface));
   padding-top: 0.2rem;
 }
 
@@ -456,7 +525,7 @@
 
 .fin-rank-label {
   font-size: 0.9375rem;
-  color: #e6e3dd;
+  color: var(--fin-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -466,11 +535,13 @@
 .fin-rank-value {
   flex: 0 0 auto;
   font-size: 0.9375rem;
-  color: #e6e3dd;
+  color: var(--fin-ink);
 }
 
+/* The leading figure is the one accented number in the list — bronze, since
+   this is type. The bar under it stays gold. */
 .fin-rank-row:first-child .fin-rank-value {
-  color: var(--gold, #c8a25b);
+  color: var(--fin-accent);
 }
 
 .fin-rank-track {
@@ -481,7 +552,7 @@
 }
 
 .fin-rank-rail {
-  fill: rgba(230, 227, 221, 0.06);
+  fill: var(--fin-rail);
 }
 
 .fin-rank-fill {
@@ -500,7 +571,7 @@
 }
 
 .fin-rank-fill.is-best {
-  fill: var(--gold, #c8a25b);
+  fill: var(--fin-best);
 }
 
 .fin-rank-meta {
@@ -512,7 +583,7 @@
   font-size: 0.6875rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--fin-mute);
 }
 
 /* ======================================================= period switcher */
@@ -539,7 +610,7 @@
   bottom: -1px;
   height: 2px;
   width: calc(100% / var(--fin-tabs, 4));
-  background: var(--gold, #c8a25b);
+  background: var(--fin-accent);
   transform: translateX(calc(100% * var(--fin-tab-index, 0)));
   pointer-events: none;
 }
@@ -554,7 +625,7 @@
   padding: 0.5rem 0.35rem;
   background: transparent;
   border: 0;
-  color: #6b6b6b;
+  color: var(--fin-mute);
   font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -565,18 +636,19 @@
 }
 
 .fin-switcher-btn:hover {
-  color: #e6e3dd;
+  color: var(--fin-ink);
 }
 
 .fin-switcher-btn.is-active {
-  color: var(--gold, #c8a25b);
+  color: var(--fin-accent);
+  font-weight: 600;
 }
 
 .fin-switcher-range {
   font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--fin-mute);
 }
 
 /* ========================================================== data tables */
@@ -592,14 +664,14 @@
   font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--fin-mute);
   /* Comfortable target without turning the row into a button slab. */
   padding: 0.6rem 0;
   list-style-position: outside;
 }
 
 .fin-data > summary:hover {
-  color: var(--gold, #c8a25b);
+  color: var(--fin-accent);
 }
 
 .fin-data-scroll {
@@ -632,7 +704,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--fin-mute);
 }
 
 .fin-table th:first-child,
@@ -643,11 +715,11 @@
 
 .fin-table tbody th {
   font-weight: 400;
-  color: #e6e3dd;
+  color: var(--fin-ink);
 }
 
 .fin-table tbody td {
-  color: rgba(230, 227, 221, 0.75);
+  color: var(--fin-mute);
 }
 
 /* ================================================== REDUCED MOTION */

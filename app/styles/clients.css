@@ -2,15 +2,40 @@
    JV GOLD — CLIENT LIST  (/private/clients)
    ==========================================================================
 
-   Dark-register cockpit sheet. Loaded ONLY by app/routes/private.clients.tsx
+   Light-register cockpit sheet. Loaded ONLY by app/routes/private.clients.tsx
    via a route `links()` export, so none of it costs the public site a byte.
+
+   HOW THE REGISTER FLIP WAS DONE HERE
+   -----------------------------------
+   This file addresses colour about a hundred times, and almost all of it in
+   the same shape: a percentage of one ink mixed into transparent. Those
+   percentages are GOOD — they encode a deliberate hierarchy, from a 4% row
+   hover up to a 90% body value — and rewriting a hundred of them by hand would
+   have thrown that hierarchy away for nothing.
+
+   So nothing about the shape changed. One indirection was inserted: every
+   rule now mixes against --cl-ink (type) or --cl-line (hairlines) instead of
+   naming --stone, and those two are bound once, here. The whole sheet inverts
+   by re-binding two custom properties, which is what the `.ops-dark` block at
+   the end of this comment's block does.
+
+   THE CONTRAST CONSTRAINT, measured on the warm stone ground #E6E3DD:
+     --cl-ink at 100%  #1A1A1A   13.59:1  names, values, table body
+     --cl-ink at  80%  ≈#4E4C4A   7.6:1   secondary values, chips, options
+     --cl-mute         #5A5A5A    5.38:1  sub-lines, counts, ledger meta
+     --cl-accent       #7A5E29    4.73:1  gold's VOICE as type (bronze)
+     --cl-bad          #9A3412    5.70:1  owing, missing, overdue
+   Brand gold is a FILL only: the selected facet mark, the status bar segment,
+   the roster swatch. Every gold letterform — the count figure, the chip
+   prefix, the ledger date, the empty-state figure — is bronze, because gold
+   type on stone is 1.87:1 and gold-deep is 2.69:1.
 
    HOUSE RULES OBSERVED HERE
    -------------------------
    - Hairlines, never cards. Nothing on this page has a box-shadow or a
      radius larger than 2px; separation comes from 1px rules at low alpha.
    - Gold is a scalpel. It marks exactly one figure per group, the sort column
-     in play, the active saved view, and focus. Everything else is stone/steel.
+     in play, the active saved view, and focus. Everything else is ink/mute.
    - Tabular numerals on every figure (`.tabular` is global, in jvgold.css).
    - Slow, expensive easing. 600–900ms on anything that moves, transform and
      opacity only, and all of it neutralised under prefers-reduced-motion at
@@ -20,9 +45,48 @@
    ========================================================================== */
 
 .clients-page {
-  min-height: 100svh;
+  /* THE TWO PROPERTIES THE WHOLE SHEET TURNS ON. */
+  --cl-ink: var(--ink, #1a1a1a); /* what was --stone, as TYPE */
+  --cl-line: var(--onyx, #1a1a1a); /* what was --stone, as a HAIRLINE */
+
+  --cl-mute: var(--ink-mute, #5a5a5a); /* what was --steel (4.16:1, failed) */
+  --cl-accent: var(--ink-accent, #7a5e29); /* what was gold/gold-deep as type */
+  --cl-bad: var(--ink-warn, #9a3412); /* what was #C9705A — 3.1:1, failed */
+
+  --cl-bg: var(--surface, #e6e3dd);
+  --cl-raise: var(--surface-raised, #efece6);
+  --cl-scrim: color-mix(in srgb, var(--onyx-deep) 48%, transparent);
+
+  /* Gold survives as a plate and as a wash — never as a letterform. */
+  --cl-plate: var(--selected-bg, #c8a25b);
+  --cl-plate-ink: var(--selected-ink, #111111);
+  --cl-wash: color-mix(in srgb, var(--gold) 14%, transparent);
+
   /* A single, very slow gold wash in the top-left corner. It reads as light
      falling into the room rather than as a gradient. */
+  background-image: radial-gradient(
+    120% 60% at 0% 0%,
+    color-mix(in srgb, var(--gold) 14%, transparent) 0%,
+    transparent 62%
+  );
+}
+
+/* Re-bind the same names on a near-black ground and the sheet inverts whole —
+   which is the entire point of the indirection. */
+.ops-dark.clients-page,
+.ops-dark .clients-page {
+  --cl-ink: var(--stone, #e6e3dd);
+  --cl-line: var(--stone, #e6e3dd);
+  --cl-mute: #8c8c8c;
+  --cl-accent: #c8a25b;
+  --cl-bad: #e08a7d;
+
+  --cl-bg: #111111;
+  --cl-raise: #1a1a1a;
+  --cl-scrim: rgba(0, 0, 0, 0.72);
+
+  --cl-wash: rgba(200, 162, 91, 0.12);
+
   background-image: radial-gradient(
     120% 60% at 0% 0%,
     color-mix(in srgb, var(--gold) 5%, transparent) 0%,
@@ -30,105 +94,18 @@
   );
 }
 
-/* --------------------------------------------------------------- HEADER -- */
-
-.clients-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background: color-mix(in srgb, var(--onyx-deep) 88%, transparent);
-  backdrop-filter: saturate(140%) blur(14px);
-}
-
-.clients-header-inner {
-  margin: 0 auto;
-  display: flex;
-  max-width: 1560px;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-}
-
-.clients-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 44px;
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--steel);
-  transition: color 600ms var(--ease-lux);
-}
-
-.clients-back:hover,
-.clients-back:focus-visible {
-  color: var(--gold);
-}
-
-.clients-title {
-  font-size: clamp(1.5rem, 6vw, 2.25rem);
-  line-height: 1;
-}
-
-.clients-subtitle {
-  margin-top: 0.75rem;
-  max-width: 46ch;
-  font-size: 0.8125rem;
-  line-height: 1.7;
-  color: var(--steel);
-}
-
-.clients-logout {
-  min-height: 44px;
-  border: 1px solid color-mix(in srgb, var(--stone) 25%, transparent);
-  padding: 0.625rem 1rem;
-  color: var(--steel);
-  transition:
-    color 600ms var(--ease-lux),
-    border-color 600ms var(--ease-lux);
-}
-
-.clients-logout:hover,
-.clients-logout:focus-visible {
-  border-color: var(--gold);
-  color: var(--gold);
-}
-
-.clients-notice {
-  border-bottom: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
-  background: color-mix(in srgb, var(--gold) 6%, transparent);
-  padding: 0.75rem 1.25rem;
-  text-align: center;
-  font-size: 0.625rem;
-  line-height: 1.6;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-
-.clients-main {
-  margin: 0 auto;
-  max-width: 1560px;
-  padding: 2.5rem 1.25rem 7rem;
-}
-
-@media (min-width: 768px) {
-  .clients-header-inner {
-    align-items: center;
-    padding: 1.25rem 2.5rem;
-  }
-  .clients-main {
-    padding: 3.5rem 2.5rem 9rem;
-  }
-}
+/* --------------------------------------------------------------- HEADER --
+   The sticky masthead, the "seed data" notice and the page measure all moved
+   to <Screen> / .ops-*. The .clients-header / .clients-notice / .clients-main
+   rules went with them rather than being retinted in place — this route now
+   describes only what is unique to a client roster.
+   ------------------------------------------------------------------------ */
 
 /* -------------------------------------------------------------- SUMMARY -- */
 
 .clients-summary {
-  border-top: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
   padding: 1.75rem 0;
 }
 
@@ -165,7 +142,7 @@
   margin-top: 0.5rem;
   font-size: 0.6875rem;
   line-height: 1.6;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* Status composition — a 3px hairline bar, not a pie, not a donut. */
@@ -178,7 +155,7 @@
   height: 3px;
   width: 100%;
   overflow: hidden;
-  background: color-mix(in srgb, var(--stone) 8%, transparent);
+  background: color-mix(in srgb, var(--cl-ink) 8%, transparent);
 }
 
 .clients-statusbar-seg {
@@ -193,7 +170,7 @@
   gap: 0.5rem 1.25rem;
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-statusbar-key li {
@@ -209,29 +186,35 @@
 }
 
 .clients-statusbar-num {
-  color: color-mix(in srgb, var(--stone) 75%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 75%, transparent);
 }
 
-/* One palette, used by the bar, its key and the row status pills. */
+/* One palette, used by the 3px bar, its key and the row status dots. These are
+   FILLS, so gold is allowed — but each of the five has to be told apart from
+   the four beside it AND from the page, which the old set could not manage on
+   stone: a 45% gold and a full gold landed within a shade of each other and
+   both within a shade of the ground. The five are now spread across the whole
+   available range, darkest to lightest. */
 .clients-statusbar-seg[data-status='Active'],
 .clients-statusbar-dot[data-status='Active'] {
-  background: color-mix(in srgb, var(--stone) 60%, transparent);
+  background: color-mix(in srgb, var(--cl-ink) 60%, transparent);
 }
 .clients-statusbar-seg[data-status='Trial'],
 .clients-statusbar-dot[data-status='Trial'] {
-  background: color-mix(in srgb, var(--gold) 45%, transparent);
+  background: var(--gold);
 }
 .clients-statusbar-seg[data-status='Paid In Full'],
 .clients-statusbar-dot[data-status='Paid In Full'] {
-  background: var(--gold);
+  background: var(--gold-deep);
 }
+/* Was #B4553F, which glows on black and greys out on stone. */
 .clients-statusbar-seg[data-status='Owes Balance'],
 .clients-statusbar-dot[data-status='Owes Balance'] {
-  background: #b4553f;
+  background: var(--cl-bad);
 }
 .clients-statusbar-seg[data-status='Inactive'],
 .clients-statusbar-dot[data-status='Inactive'] {
-  background: color-mix(in srgb, var(--steel) 70%, transparent);
+  background: color-mix(in srgb, var(--cl-mute) 70%, transparent);
 }
 
 /* -------------------------------------------------------------- FILTERS -- */
@@ -279,12 +262,12 @@
 .clients-view-chip {
   flex: none;
   min-height: 44px;
-  border: 1px solid color-mix(in srgb, var(--stone) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 16%, transparent);
   padding: 0.5rem 0.9375rem;
   white-space: nowrap;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
-  color: color-mix(in srgb, var(--stone) 80%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 80%, transparent);
   transition:
     color 600ms var(--ease-lux),
     border-color 600ms var(--ease-lux),
@@ -293,14 +276,16 @@
 
 .clients-view-chip:hover,
 .clients-view-chip:focus-visible {
-  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
-  color: var(--gold);
+  border-color: var(--cl-accent);
+  color: var(--cl-accent);
 }
 
+/* The active saved view is a gold PLATE carrying onyx (7.95:1) — the same
+   move .ops-chip makes, and the reason gold survives on this page at all. */
 .clients-view-chip[aria-pressed='true'] {
-  border-color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 12%, transparent);
-  color: var(--gold);
+  border-color: var(--gold-deep);
+  background: var(--cl-plate);
+  color: var(--cl-plate-ink);
 }
 
 /* Search + the mobile Filters toggle. */
@@ -320,24 +305,24 @@
   width: 100%;
   min-height: 44px;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 22%, transparent);
   background: transparent;
   padding: 0.5rem 0;
-  color: var(--stone);
+  color: var(--cl-ink);
   transition: border-color 600ms var(--ease-lux);
 }
 
 .clients-input::placeholder {
-  color: color-mix(in srgb, var(--steel) 90%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 45%, transparent);
 }
 
 .clients-input:focus {
   outline: none;
-  border-bottom-color: var(--gold);
+  border-bottom-color: var(--cl-accent);
 }
 
 .clients-input:focus-visible {
-  outline: 1px solid var(--gold);
+  outline: 2px solid var(--focus-ring, var(--cl-accent));
   outline-offset: 4px;
 }
 
@@ -352,7 +337,7 @@
   max-width: 60ch;
   font-size: 0.6875rem;
   line-height: 1.6;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-facets-toggle {
@@ -362,12 +347,12 @@
   gap: 0.625rem;
   min-height: 44px;
   align-self: flex-end;
-  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 22%, transparent);
   padding: 0.625rem 0.9375rem;
   font-size: 0.6875rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--stone);
+  color: var(--cl-ink);
   transition:
     color 600ms var(--ease-lux),
     border-color 600ms var(--ease-lux);
@@ -375,12 +360,12 @@
 
 .clients-facets-toggle:hover,
 .clients-facets-toggle:focus-visible {
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--cl-accent);
+  color: var(--cl-accent);
 }
 
 .clients-facets-count {
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
 /* Active-filter chips. */
@@ -396,11 +381,11 @@
   align-items: center;
   gap: 0.5rem;
   min-height: 36px;
-  border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
-  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold-deep) 70%, transparent);
+  background: var(--cl-wash);
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
-  color: var(--stone);
+  color: var(--cl-ink);
   transition:
     border-color 600ms var(--ease-lux),
     background-color 600ms var(--ease-lux);
@@ -408,31 +393,31 @@
 
 .clients-chip:hover,
 .clients-chip:focus-visible {
-  border-color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  border-color: var(--cl-accent);
+  background: color-mix(in srgb, var(--gold) 24%, transparent);
 }
 
 .clients-chip-prefix {
   font-size: 0.625rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold-deep);
+  color: var(--cl-accent);
 }
 
 .clients-chip-x {
   font-size: 1rem;
   line-height: 1;
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
 .clients-chip-clear {
   border-style: dashed;
-  border-color: color-mix(in srgb, var(--stone) 30%, transparent);
+  border-color: color-mix(in srgb, var(--cl-line) 30%, transparent);
   background: transparent;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-size: 0.625rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* The facet panel. Collapsed on phones, always open from lg up — one DOM
@@ -441,7 +426,7 @@
   display: grid;
   gap: 1.75rem;
   margin-top: 1.75rem;
-  border-top: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
   padding-top: 1.75rem;
   grid-template-columns: minmax(0, 1fr);
 }
@@ -493,16 +478,17 @@
   cursor: pointer;
   padding: 0.375rem 0;
   font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--stone) 82%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 82%, transparent);
   transition: color 600ms var(--ease-lux);
 }
 
 .clients-option:hover {
-  color: var(--stone);
+  color: var(--cl-ink);
 }
 
 .clients-option[data-checked='true'] {
-  color: var(--gold);
+  color: var(--cl-accent);
+  font-weight: 600;
 }
 
 /* Options that would return nothing are dimmed, never hidden — a facet that
@@ -524,19 +510,22 @@
   height: 14px;
   width: 14px;
   flex: none;
-  border: 1px solid color-mix(in srgb, var(--stone) 32%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 32%, transparent);
   transition:
     border-color 600ms var(--ease-lux),
     background-color 600ms var(--ease-lux);
 }
 
+/* Gold fill, ink ring. Gold alone is 1.87:1 against stone, so a checked box
+   would look like an empty one; the ring carries the boundary contrast and
+   lets the fill stay brand gold. */
 .clients-option[data-checked='true'] .clients-option-mark {
-  border-color: var(--gold);
-  background: var(--gold);
+  border-color: var(--cl-ink);
+  background: var(--cl-plate);
 }
 
 .clients-option-input:focus-visible + .clients-option-mark {
-  outline: 1px solid var(--gold);
+  outline: 2px solid var(--focus-ring, var(--cl-accent));
   outline-offset: 3px;
 }
 
@@ -551,7 +540,7 @@
 .clients-option-count {
   flex: none;
   font-size: 0.6875rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* Range facets. */
@@ -567,7 +556,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-range-shell {
@@ -578,16 +567,18 @@
 
 .clients-range-prefix {
   font-size: 0.8125rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-range-shell .clients-input {
   font-size: 0.9375rem;
 }
 
-/* Date inputs render a UA calendar glyph that is black-on-black by default. */
+/* The UA calendar glyph is dark by default, which is now correct on stone —
+   the old invert() was there to rescue it from a black ground and would blow
+   it out to near-white here. */
 .clients-input::-webkit-calendar-picker-indicator {
-  filter: invert(72%) sepia(18%) saturate(700%) hue-rotate(3deg);
+  opacity: 0.7;
   cursor: pointer;
 }
 
@@ -596,7 +587,7 @@
   font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold-deep);
+  color: var(--cl-accent);
 }
 
 /* ------------------------------------------------------------ RESULT BAR -- */
@@ -608,7 +599,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
   padding-bottom: 1rem;
 }
 
@@ -620,19 +611,19 @@
 
 .clients-count-figure {
   font-size: 1.5rem;
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
 .clients-count-of {
   font-size: 0.8125rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-count-note {
   font-size: 0.625rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold-deep);
+  color: var(--cl-accent);
 }
 
 .clients-resultbar-tools {
@@ -656,27 +647,27 @@
 
 .clients-select {
   min-height: 44px;
-  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 22%, transparent);
   background: transparent;
   padding: 0 0.75rem;
   font-size: 0.8125rem;
-  color: var(--stone);
+  color: var(--cl-ink);
 }
 
 .clients-select option {
-  background: var(--onyx);
-  color: var(--stone);
+  background: var(--cl-bg);
+  color: var(--cl-ink);
 }
 
 .clients-dirtoggle,
 .clients-copy {
   min-height: 44px;
-  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 22%, transparent);
   padding: 0 0.9375rem;
   font-size: 0.6875rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--stone);
+  color: var(--cl-ink);
   transition:
     color 600ms var(--ease-lux),
     border-color 600ms var(--ease-lux);
@@ -686,8 +677,8 @@
 .clients-dirtoggle:focus-visible,
 .clients-copy:hover,
 .clients-copy:focus-visible {
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--cl-accent);
+  color: var(--cl-accent);
 }
 
 /* ---------------------------------------------------------------- TABLE -- */
@@ -721,7 +712,7 @@
 }
 
 .clients-table thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 18%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 18%, transparent);
   padding-top: 0;
   padding-bottom: 0.75rem;
   font-weight: 400;
@@ -735,7 +726,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--cl-mute);
   transition: color 600ms var(--ease-lux);
 }
 
@@ -745,11 +736,14 @@
 
 .clients-sort:hover,
 .clients-sort:focus-visible {
-  color: var(--stone);
+  color: var(--cl-ink);
 }
 
+/* The column in play. Bronze plus weight, because a 10px uppercase label is
+   the worst possible case for a low-contrast colour. */
 .clients-sort[data-active='true'] {
-  color: var(--gold);
+  color: var(--cl-accent);
+  font-weight: 600;
 }
 
 .clients-sort-caret {
@@ -757,18 +751,18 @@
 }
 
 .clients-row {
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 9%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 9%, transparent);
   cursor: pointer;
   transition: background-color 600ms var(--ease-lux);
 }
 
 .clients-row:hover,
 .clients-row[data-open='true'] {
-  background: color-mix(in srgb, var(--stone) 4%, transparent);
+  background: color-mix(in srgb, var(--cl-ink) 4%, transparent);
 }
 
 .clients-row:focus-within {
-  background: color-mix(in srgb, var(--gold) 6%, transparent);
+  background: var(--cl-wash);
 }
 
 .clients-name {
@@ -789,46 +783,50 @@
 .clients-name-main {
   font-size: 0.9375rem;
   letter-spacing: 0.04em;
-  color: var(--stone);
+  color: var(--cl-ink);
   transition: color 600ms var(--ease-lux);
 }
 
 .clients-name:hover .clients-name-main,
 .clients-name:focus-visible .clients-name-main {
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
 .clients-name-sub {
   font-size: 0.6875rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* Deterministic roster swatch, keyed off client.colorIndex (0-7). Muted
    metals only — this is an identity cue, not a rainbow legend. */
+/* Deterministic roster swatch. A 2px bar is a non-text UI component, so every
+   value has to clear 3:1 against the page: the 45%/70% golds and the 32%
+   ink that used to sit in this list were invisible once the ground went
+   light. Mixes are toward INK now, not toward transparent. */
 .clients-swatch {
   height: 26px;
   width: 2px;
   flex: none;
-  background: var(--gold);
+  background: var(--cl-accent);
 }
-.clients-swatch[data-color='0'] { background: color-mix(in srgb, var(--gold) 100%, transparent); }
-.clients-swatch[data-color='1'] { background: color-mix(in srgb, var(--gold) 70%, transparent); }
-.clients-swatch[data-color='2'] { background: color-mix(in srgb, var(--stone) 55%, transparent); }
-.clients-swatch[data-color='3'] { background: color-mix(in srgb, var(--gold-deep) 90%, transparent); }
-.clients-swatch[data-color='4'] { background: color-mix(in srgb, var(--steel) 90%, transparent); }
-.clients-swatch[data-color='5'] { background: color-mix(in srgb, var(--stone) 32%, transparent); }
-.clients-swatch[data-color='6'] { background: color-mix(in srgb, var(--gold) 45%, transparent); }
-.clients-swatch[data-color='7'] { background: color-mix(in srgb, var(--steel) 55%, transparent); }
+.clients-swatch[data-color='0'] { background: var(--gold-deep); }
+.clients-swatch[data-color='1'] { background: var(--cl-accent); }
+.clients-swatch[data-color='2'] { background: color-mix(in srgb, var(--cl-ink) 78%, transparent); }
+.clients-swatch[data-color='3'] { background: color-mix(in srgb, var(--gold-deep) 80%, var(--cl-ink)); }
+.clients-swatch[data-color='4'] { background: var(--cl-mute); }
+.clients-swatch[data-color='5'] { background: color-mix(in srgb, var(--cl-ink) 60%, transparent); }
+.clients-swatch[data-color='6'] { background: color-mix(in srgb, var(--cl-accent) 70%, var(--cl-ink)); }
+.clients-swatch[data-color='7'] { background: color-mix(in srgb, var(--cl-mute) 80%, var(--cl-ink)); }
 
 .clients-level {
   font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--stone) 80%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 80%, transparent);
 }
 
 .clients-age {
   margin-left: 0.5rem;
   font-size: 0.6875rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-status {
@@ -838,7 +836,7 @@
   white-space: nowrap;
   font-size: 0.75rem;
   letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--stone) 78%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 78%, transparent);
 }
 
 .clients-status-dot {
@@ -849,22 +847,22 @@
 }
 
 .clients-status[data-status='Owes Balance'] {
-  color: #c9705a;
+  color: var(--cl-bad);
 }
 .clients-status[data-status='Paid In Full'] {
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 .clients-status[data-status='Trial'] {
-  color: color-mix(in srgb, var(--gold) 72%, var(--stone));
+  color: color-mix(in srgb, var(--cl-accent) 80%, var(--cl-ink));
 }
 .clients-status[data-status='Inactive'] {
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-cell-main {
   display: block;
   font-size: 0.875rem;
-  color: color-mix(in srgb, var(--stone) 88%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 88%, transparent);
 }
 
 .clients-cell-sub {
@@ -872,11 +870,11 @@
   margin-top: 0.1875rem;
   font-size: 0.625rem;
   letter-spacing: 0.08em;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-owing {
-  color: #c9705a;
+  color: var(--cl-bad);
 }
 
 /* Sessions-left meter: figure, then a burn-down hairline under it. */
@@ -890,34 +888,37 @@
 
 .clients-meter-value {
   font-size: 0.9375rem;
-  color: var(--stone);
+  color: var(--cl-ink);
 }
 
 .clients-meter[data-bucket='low'] .clients-meter-value {
-  color: var(--gold);
+  color: var(--cl-accent);
+  font-weight: 600;
 }
 
 .clients-meter[data-bucket='exhausted'] .clients-meter-value,
 .clients-meter[data-bucket='none'] .clients-meter-value {
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-meter-track {
   display: block;
   height: 2px;
   width: 3.5rem;
-  background: color-mix(in srgb, var(--stone) 12%, transparent);
+  background: color-mix(in srgb, var(--cl-ink) 12%, transparent);
 }
 
 .clients-meter-fill {
   display: block;
   height: 100%;
-  background: color-mix(in srgb, var(--stone) 55%, transparent);
+  background: color-mix(in srgb, var(--cl-ink) 55%, transparent);
   transition: width 900ms var(--ease-lux);
 }
 
+/* Bronze, not gold: a 2px fill has to be told apart from its own track, and
+   gold sits almost exactly on that track's lightness over stone. */
 .clients-meter[data-bucket='low'] .clients-meter-fill {
-  background: var(--gold);
+  background: var(--cl-accent);
 }
 
 /* Compliance pips. Filled = on file, hollow = missing. */
@@ -931,21 +932,21 @@
   align-items: center;
   justify-content: center;
   min-width: 2.375rem;
-  border: 1px solid color-mix(in srgb, var(--stone) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 16%, transparent);
   padding: 0.1875rem 0.25rem;
   font-size: 0.5625rem;
   letter-spacing: 0.12em;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-pip[data-ok='true'] {
-  border-color: color-mix(in srgb, var(--stone) 26%, transparent);
-  color: color-mix(in srgb, var(--stone) 72%, transparent);
+  border-color: color-mix(in srgb, var(--cl-line) 26%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 72%, transparent);
 }
 
 .clients-pip[data-ok='false'] {
-  border-color: color-mix(in srgb, #c9705a 55%, transparent);
-  color: #c9705a;
+  border-color: color-mix(in srgb, var(--cl-bad) 55%, transparent);
+  color: var(--cl-bad);
 }
 
 /* ---------------------------------------------------------------- CARDS -- */
@@ -962,13 +963,13 @@
 
 .clients-card {
   position: relative;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 10%, transparent);
   padding: 1.25rem 0;
   transition: background-color 600ms var(--ease-lux);
 }
 
 .clients-card[data-open='true'] {
-  background: color-mix(in srgb, var(--gold) 6%, transparent);
+  background: var(--cl-wash);
 }
 
 /* ONE focusable control per card, stretched over the whole thing. The body
@@ -982,7 +983,7 @@
 }
 
 .clients-card-hit:focus-visible {
-  outline: 1px solid var(--gold);
+  outline: 2px solid var(--focus-ring, var(--cl-accent));
   outline-offset: -2px;
 }
 
@@ -1012,7 +1013,7 @@
   margin-top: 0.3125rem;
   font-size: 0.6875rem;
   line-height: 1.5;
-  color: var(--steel);
+  color: var(--cl-mute);
   overflow-wrap: anywhere;
 }
 
@@ -1027,23 +1028,24 @@
   font-size: 0.5625rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-card-grid dd {
   margin-top: 0.3125rem;
   font-size: 0.875rem;
-  color: color-mix(in srgb, var(--stone) 90%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 90%, transparent);
   overflow-wrap: anywhere;
 }
 
 .clients-card-grid dd[data-bucket='low'] {
-  color: var(--gold);
+  color: var(--cl-accent);
+  font-weight: 600;
 }
 
 .clients-card-grid dd[data-bucket='exhausted'],
 .clients-card-grid dd[data-bucket='none'] {
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-card-foot {
@@ -1058,14 +1060,14 @@
 .clients-card-tags {
   font-size: 0.625rem;
   letter-spacing: 0.1em;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* ---------------------------------------------------------------- EMPTY -- */
 
 .clients-empty {
   margin-top: 3.5rem;
-  border-top: 1px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--gold-deep) 65%, transparent);
   padding-top: 2rem;
   max-width: 46rem;
 }
@@ -1080,12 +1082,12 @@
   margin-top: 1rem;
   font-size: 0.875rem;
   line-height: 1.7;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-empty-list {
   margin-top: 1.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
 }
 
 .clients-empty-list li {
@@ -1093,35 +1095,42 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
   padding: 0.75rem 0;
 }
 
 .clients-empty-dim {
   font-size: 0.875rem;
-  color: var(--stone);
+  color: var(--cl-ink);
 }
 
 .clients-empty-count {
   font-size: 0.75rem;
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
+/* Arrives AS the plate. An outlined gold button is a 1.87:1 hairline here. */
 .clients-empty-reset {
   margin-top: 1.75rem;
   min-height: 44px;
-  border: 1px solid var(--gold);
+  border: 1px solid var(--gold-deep);
+  background: var(--cl-plate);
   padding: 0.625rem 1.25rem;
   font-size: 0.6875rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gold);
-  transition: background-color 600ms var(--ease-lux);
+  color: var(--cl-plate-ink);
+  transition:
+    background-color 600ms var(--ease-lux),
+    border-color 600ms var(--ease-lux),
+    color 600ms var(--ease-lux);
 }
 
 .clients-empty-reset:hover,
 .clients-empty-reset:focus-visible {
-  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  background: var(--cl-ink);
+  border-color: var(--cl-ink);
+  color: var(--cl-bg);
 }
 
 .clients-empty-foot {
@@ -1129,7 +1138,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* ---------------------------------------------------------------- SHEET -- */
@@ -1146,7 +1155,7 @@
   position: absolute;
   inset: 0;
   width: 100%;
-  background: color-mix(in srgb, #000 72%, transparent);
+  background: var(--cl-scrim);
   animation: clients-scrim-in 500ms var(--ease-lux) both;
   cursor: default;
 }
@@ -1164,8 +1173,12 @@
   width: 100%;
   max-width: 44rem;
   max-height: 100svh;
-  background: var(--onyx);
-  border-left: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+  /* The sheet is a RAISED light plane, not a dark object dropped on a light
+     page — ClientDetailSheet has no .ops-dark on it, so a near-black ground
+     here would strand every token inside it pointing the wrong way. */
+  background: var(--cl-raise);
+  color: var(--cl-ink);
+  border-left: 1px solid color-mix(in srgb, var(--gold-deep) 60%, transparent);
   animation: clients-sheet-in 700ms var(--ease-lux) both;
 }
 
@@ -1181,7 +1194,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 14%, transparent);
   padding: 1.25rem 1.25rem 1.5rem;
 }
 
@@ -1198,13 +1211,13 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-sheet-dot {
   height: 3px;
   width: 3px;
-  background: color-mix(in srgb, var(--steel) 80%, transparent);
+  background: color-mix(in srgb, var(--cl-mute) 80%, transparent);
 }
 
 .clients-sheet-close {
@@ -1214,10 +1227,10 @@
   justify-content: center;
   height: 44px;
   width: 44px;
-  border: 1px solid color-mix(in srgb, var(--stone) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 22%, transparent);
   font-size: 1.25rem;
   line-height: 1;
-  color: var(--stone);
+  color: var(--cl-ink);
   transition:
     color 600ms var(--ease-lux),
     border-color 600ms var(--ease-lux);
@@ -1225,8 +1238,8 @@
 
 .clients-sheet-close:hover,
 .clients-sheet-close:focus-visible {
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--cl-accent);
+  color: var(--cl-accent);
 }
 
 .clients-sheet-body {
@@ -1250,7 +1263,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
   padding-bottom: 1.75rem;
 }
 
@@ -1276,7 +1289,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
   padding-bottom: 0.75rem;
 }
 
@@ -1284,7 +1297,7 @@
   font-size: 0.625rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-sheet-list {
@@ -1296,7 +1309,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 8%, transparent);
   padding: 0.6875rem 0;
 }
 
@@ -1305,13 +1318,13 @@
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-sheet-row dd {
   text-align: right;
   font-size: 0.875rem;
-  color: color-mix(in srgb, var(--stone) 90%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 90%, transparent);
   overflow-wrap: anywhere;
 }
 
@@ -1323,33 +1336,33 @@
 }
 
 .clients-sheet-tag {
-  border: 1px solid color-mix(in srgb, var(--stone) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cl-line) 18%, transparent);
   padding: 0.25rem 0.5rem;
   font-size: 0.625rem;
   letter-spacing: 0.1em;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-sheet-note {
   margin-top: 1rem;
-  border-left: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  border-left: 2px solid var(--cl-accent);
   padding-left: 0.875rem;
   font-size: 0.8125rem;
   line-height: 1.7;
-  color: color-mix(in srgb, var(--stone) 78%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 78%, transparent);
 }
 
 .clients-sheet-package {
   margin-top: 1rem;
   font-size: 1.0625rem;
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
 .clients-sheet-empty {
   margin-top: 1rem;
   font-size: 0.8125rem;
   line-height: 1.7;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 /* Compliance checklist. */
@@ -1361,7 +1374,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.875rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 8%, transparent);
   padding: 0.875rem 0;
 }
 
@@ -1374,15 +1387,15 @@
   flex: none;
   border: 1px solid currentColor;
   font-size: 0.6875rem;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-check li[data-ok='true'] .clients-check-mark {
-  color: var(--gold);
+  color: var(--cl-accent);
 }
 
 .clients-check li[data-ok='false'] .clients-check-mark {
-  color: #c9705a;
+  color: var(--cl-bad);
 }
 
 .clients-check-text {
@@ -1394,12 +1407,12 @@
 
 .clients-check-label {
   font-size: 0.875rem;
-  color: var(--stone);
+  color: var(--cl-ink);
 }
 
 .clients-check-detail {
   font-size: 0.6875rem;
-  color: var(--steel);
+  color: var(--cl-mute);
   overflow-wrap: anywhere;
 }
 
@@ -1413,14 +1426,14 @@
   grid-template-columns: 5.5rem minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--stone) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--cl-line) 8%, transparent);
   padding: 0.75rem 0;
 }
 
 .clients-ledger-date {
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
-  color: var(--gold-deep);
+  color: var(--cl-accent);
 }
 
 .clients-ledger-main {
@@ -1432,31 +1445,424 @@
 
 .clients-ledger-title {
   font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--stone) 90%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 90%, transparent);
   overflow-wrap: anywhere;
 }
 
 .clients-ledger-sub {
   font-size: 0.625rem;
   letter-spacing: 0.06em;
-  color: var(--steel);
+  color: var(--cl-mute);
 }
 
 .clients-ledger-amount {
   font-size: 0.8125rem;
-  color: color-mix(in srgb, var(--stone) 85%, transparent);
+  color: color-mix(in srgb, var(--cl-ink) 85%, transparent);
   white-space: nowrap;
+}
+
+/* ---------------------------------------------------------- SHOPIFY LINK --
+   The answer to "can I invoice this family?", rendered as a state rather than
+   as a row in a definition list. Connected is ink; not connected is --cl-bad,
+   the same 5.70:1 red the roster already uses for owing and for missing
+   paperwork — because this IS a missing piece of paperwork.
+   ------------------------------------------------------------------------ */
+
+.clients-linkstate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.clients-linkstate strong {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.clients-linkstate[data-linked='true'] strong {
+  color: var(--cl-accent);
+}
+
+.clients-linkstate[data-linked='false'] strong {
+  color: var(--cl-bad);
+}
+
+.clients-linkstate-id {
+  font-size: 0.75rem;
+  color: var(--cl-ink);
+  overflow-wrap: anywhere;
+}
+
+.clients-linkstate-detail {
+  color: var(--cl-mute);
+}
+
+.clients-linkstate-actions {
+  margin-top: 0.75rem;
+}
+
+.clients-linkstate-btn {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid color-mix(in srgb, var(--cl-line) 30%, transparent);
+  background: none;
+  color: var(--cl-ink);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.clients-linkstate-btn:hover:not([disabled]),
+.clients-linkstate-btn:focus-visible {
+  border-color: var(--cl-accent);
+  color: var(--cl-accent);
+}
+
+.clients-linkstate-btn[disabled] {
+  color: var(--cl-mute);
+  cursor: not-allowed;
+}
+
+.clients-linkstate-error {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--cl-bad);
+}
+
+/* ------------------------------------------------------- PENDING ACTIONS --
+   Work that is genuinely blocked, named. Numbered because they are a queue,
+   and left-ruled rather than boxed — hairlines, never cards.
+   ------------------------------------------------------------------------ */
+
+.clients-pending {
+  margin-top: 1rem;
+  counter-reset: pending;
+}
+
+.clients-pending li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  counter-increment: pending;
+  border-left: 2px solid color-mix(in srgb, var(--cl-bad) 55%, transparent);
+  padding: 0.25rem 0 1rem 0.875rem;
+}
+
+.clients-pending-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cl-ink);
+}
+
+.clients-pending-label::before {
+  content: counter(pending) ' · ';
+  color: var(--cl-mute);
+}
+
+.clients-pending-detail {
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--cl-ink) 78%, transparent);
+}
+
+.clients-pending-next {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--cl-mute);
+}
+
+/* =========================================================== INTAKE FORM ==
+   /private/clients/new. Selectable-first: four text inputs for the values that
+   genuinely cannot come from a list, and chip groups for everything else.
+
+   Sized for a phone first. Every control is 44px minimum — which is also why
+   the chips are buttons rather than a native <select>, whose platform hit area
+   is smaller than that on both iOS and Android.
+   ======================================================================== */
+
+.clients-intake {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  max-width: 62rem;
+  margin-top: 2rem;
+}
+
+.clients-intake-section {
+  border-top: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
+  padding-top: 1.25rem;
+}
+
+.clients-intake-section > * + * {
+  margin-top: 1.5rem;
+}
+
+.clients-intake-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .clients-intake-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.clients-intake-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.clients-intake-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.5625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cl-mute);
+}
+
+.clients-intake-req {
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  color: var(--cl-accent);
+}
+
+.clients-intake-input {
+  min-height: 44px;
+}
+
+.clients-intake-input[aria-invalid='true'] {
+  border-color: var(--cl-bad);
+}
+
+.clients-intake-hint {
+  font-size: 0.6875rem;
+  line-height: 1.55;
+  color: var(--cl-mute);
+}
+
+/* The marker on a field Shopify must never be given. Quiet, but never absent —
+   somebody adding a metafield later should trip over it. */
+.clients-intake-guard {
+  color: var(--cl-accent);
+  letter-spacing: 0.06em;
+}
+
+.clients-intake-error {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--cl-bad);
+}
+
+.clients-intake-note {
+  border-left: 2px solid var(--cl-accent);
+  padding-left: 0.875rem;
+  max-width: 72ch;
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  color: color-mix(in srgb, var(--cl-ink) 78%, transparent);
+}
+
+.clients-intake-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--cl-ink);
+}
+
+/* ---- chip groups ---- */
+
+.clients-intake-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.clients-intake-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.clients-intake-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 44px;
+  justify-content: center;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--cl-line) 22%, transparent);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.clients-intake-chip:hover {
+  border-color: color-mix(in srgb, var(--cl-line) 45%, transparent);
+}
+
+.clients-intake-chip-label {
+  font-size: 0.8125rem;
+  color: var(--cl-ink);
+}
+
+.clients-intake-chip-meta {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  color: var(--cl-mute);
+}
+
+.clients-intake-chip-mark {
+  margin-left: 0.15rem;
+  color: var(--cl-accent);
+}
+
+/* Selected is a gold PLATE with onyx type on it. Gold type on stone is
+   1.87:1 and would fail, which is why the fill inverts instead. */
+.clients-intake-chip[aria-checked='true'] {
+  border-color: var(--gold-deep);
+  background: var(--cl-plate);
+}
+
+.clients-intake-chip[aria-checked='true'] .clients-intake-chip-label,
+.clients-intake-chip[aria-checked='true'] .clients-intake-chip-meta,
+.clients-intake-chip[aria-checked='true'] .clients-intake-chip-mark {
+  color: var(--cl-plate-ink);
+}
+
+/* ---- the running gap list ---- */
+
+.clients-intake-gaps {
+  border-top: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
+  padding-top: 1rem;
+}
+
+.clients-intake-gaps-head {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cl-accent);
+}
+
+/* ---- where the record goes ---- */
+
+.clients-intake-routes li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-left: 2px solid color-mix(in srgb, var(--cl-line) 25%, transparent);
+  padding: 0.25rem 0 1rem 0.875rem;
+}
+
+.clients-intake-routes li[data-ready='false'] {
+  border-left-color: color-mix(in srgb, var(--cl-bad) 55%, transparent);
+}
+
+.clients-intake-routes li[data-ready='true'] {
+  border-left-color: color-mix(in srgb, var(--cl-accent) 65%, transparent);
+}
+
+.clients-intake-route-name {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cl-ink);
+}
+
+.clients-intake-route-detail {
+  max-width: 72ch;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--cl-mute);
+}
+
+/* ---- result + footer ---- */
+
+.clients-intake-result {
+  border-left: 2px solid var(--cl-accent);
+  padding-left: 0.875rem;
+  max-width: 72ch;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--cl-ink);
+}
+
+.clients-intake-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--cl-line) 12%, transparent);
+  padding-top: 1.5rem;
+}
+
+.clients-intake-submit {
+  min-height: 48px;
+  padding: 0 1.5rem;
+  border: 0;
+  background: var(--cl-plate);
+  color: var(--cl-plate-ink);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.clients-intake-submit:hover:not([disabled]) {
+  background: var(--cl-ink);
+  color: var(--cl-bg);
+}
+
+.clients-intake-submit[disabled] {
+  background: color-mix(in srgb, var(--cl-line) 14%, transparent);
+  color: var(--cl-mute);
+  cursor: not-allowed;
+}
+
+.clients-intake-cancel {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cl-mute);
+  text-decoration: none;
+}
+
+.clients-intake-cancel:hover,
+.clients-intake-cancel:focus-visible {
+  color: var(--cl-ink);
 }
 
 /* ------------------------------------------------------------- A11Y/MOTION */
 
-.clients-page :focus-visible {
-  outline: 1px solid var(--gold);
-  outline-offset: 3px;
-}
-
+/* A gold ring is 1.87:1 on stone, which is not a focus indicator. Bronze at
+   2px is, and it inherits the register's --focus-ring wherever one is set. */
+.clients-page :focus-visible,
 .clients-sheet :focus-visible {
-  outline: 1px solid var(--gold);
+  outline: 2px solid var(--focus-ring, var(--cl-accent));
   outline-offset: 3px;
 }
 
@@ -1473,15 +1879,16 @@
   .clients-chip,
   .clients-option,
   .clients-input,
-  .clients-back,
-  .clients-logout,
   .clients-sort,
   .clients-name-main,
   .clients-copy,
   .clients-dirtoggle,
   .clients-sheet-close,
   .clients-empty-reset,
-  .clients-facets-toggle {
+  .clients-facets-toggle,
+  .clients-linkstate-btn,
+  .clients-intake-chip,
+  .clients-intake-submit {
     transition: none;
   }
 }

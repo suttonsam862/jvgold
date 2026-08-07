@@ -2,7 +2,7 @@ import {Link} from 'react-router';
 import {BookingFlow} from '~/components/booking/BookingFlow';
 import {Img} from '~/components/site/Img';
 import Ticks from '~/components/site/Ticks';
-import {SEASON_LABEL} from '~/lib/offerings';
+import {SEASON_LABEL, TERMS} from '~/lib/offerings';
 import styles from '~/styles/booking.css?url';
 
 export function links() {
@@ -15,7 +15,7 @@ export function meta() {
     {
       name: 'description',
       content:
-        'Book private wrestling training with Jesse Vasquez — 1-on-1 sessions, partner training, dedicated workouts, small-group clinics, monthly private packages and overnight camps in Riverside, California.',
+        'Book private wrestling training with Jesse Vasquez — 1-on-1 sessions, partner training, dedicated workouts, small-group clinics and monthly packages in Riverside, California. Clubs, schools and event hosts book Jesse for multi-day camps at $1,500 a day.',
     },
   ];
 }
@@ -47,12 +47,34 @@ const process = [
 
 const faqs = [
   {
+    /*
+     * The discounts are read off the engine rather than typed in. A percentage
+     * written into marketing copy as a literal is the first thing to go stale
+     * when a rate moves, and a stale discount claim is an advertising problem,
+     * not a typo.
+     */
+    q: 'How do the monthly plans work?',
+    a: `Everything except the camp booking can be bought as a plan: one session a month, billed monthly, at a lower rate the longer you commit — ${TERMS.m3.discountLabel} for three months, ${TERMS.m6.discountLabel} for six, ${TERMS.m12.discountLabel} for twelve. Twelve months is selected for you because it is the cheapest way to train with Jesse every month; the one-off price is always there if you would rather pay a session at a time. The commitment is a minimum, not a ceiling — the plan keeps billing monthly after it until you stop it, and you agree to that on its own, before anything is booked.`,
+  },
+  {
+    q: 'How do I cancel a plan?',
+    a: `${TERMS.m12.cancelCopy} Cancelling stops every future charge; the months you have already paid for are still yours to use. Camp deposits follow the camp policy below.`,
+  },
+  {
     q: 'Where do sessions happen?',
-    a: 'The Riverside room, unless your package says otherwise. Monthly packages train in the Riverside area on the standing days you choose; camps are residential with lodging and meals included.',
+    a: 'The Riverside room, unless your booking says otherwise. Monthly packages train in the Riverside area on the standing days you choose; camps happen at the host’s venue, wherever that is.',
+  },
+  {
+    q: 'How does camp pricing work?',
+    a: 'A camp is a booking of Jesse, not a ticket sold per athlete. It is $1,500 for every consecutive day he is on your mats — two days is $3,000, three is $4,500 — whether you put twenty athletes in front of him or a hundred. The host supplies the venue and the room; a deposit holds the dates and comes off the total.',
+  },
+  {
+    q: 'Who books a camp?',
+    a: 'Clubs, schools and event organisers. You choose day one and how many consecutive days you want him, and Jesse builds the days around your athletes — their age, their level and the time you have the mats.',
   },
   {
     q: 'What is the cancellation policy?',
-    a: 'Twenty-four hours. Reschedule free up to a day before a session; inside 24 hours the session is charged in full. Camp deposits are non-refundable inside three weeks of the first day.',
+    a: 'Twenty-four hours. Reschedule free up to a day before a session; inside 24 hours the session is charged in full. Camp deposits are non-refundable inside three weeks of day one.',
   },
   {
     q: 'How young is too young?',
@@ -181,9 +203,11 @@ export default function TrainPage() {
               answers.
             </h2>
             <p className="mt-6 max-w-sm leading-relaxed text-onyx/70">
-              No packages that expire quietly, no surprise fees, no auto-renew you
-              have to fight. Ask anything the calendar doesn&rsquo;t answer in the
-              notes on your request.
+              No packages that expire quietly and no surprise fees. Plans do renew
+              until you stop them &mdash; that is said plainly before you agree to
+              one, and you cancel online without asking anybody&rsquo;s permission.
+              Ask anything the calendar doesn&rsquo;t answer in the notes on your
+              request.
             </p>
           </div>
           <dl className="flex flex-col">

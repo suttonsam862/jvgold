@@ -27,10 +27,12 @@ import type {
 import {addDays} from '~/lib/ops/types';
 import {ConnectPanel} from './ConnectPanel';
 import {EventSheet} from './EventSheet';
-import type {EventDraft, SheetMode} from './EventSheet';
+import type {SheetMode} from './EventSheet';
 import {MonthView} from './MonthView';
 import {TimeGrid} from './TimeGrid';
-import type {CalendarView, RosterEntry} from './layout';
+import type {CalendarFormData, SessionDraft, SessionLog} from './sessionModel';
+import {availabilityFromEvents, commitSession, emptyDraft} from './sessionModel';
+import type {CalendarView} from './layout';
 import {
   KIND_LABEL,
   addMonths,
@@ -62,7 +64,10 @@ const TONE_LEGEND = [
 
 interface CalendarShellProps {
   events: CalendarEvent[];
-  roster: RosterEntry[];
+  /** His book's vocabulary for each event, keyed by event id. */
+  sessionLogs: Record<string, SessionLog>;
+  /** Everything the session form needs, derived from his history server-side. */
+  formData: CalendarFormData;
   anchorDate: IsoDate;
   google: IntegrationStatus | null;
   googleCalendarId: string | null;
@@ -71,14 +76,16 @@ interface CalendarShellProps {
 
 export function CalendarShell({
   events: seedEvents,
-  roster,
+  sessionLogs,
+  formData,
   anchorDate,
   google,
   googleCalendarId,
   connectMessage,
 }: CalendarShellProps) {
   const [events, setEvents] = useState<CalendarEvent[]>(seedEvents);
-  /** Ids that exist only in this tab — drives the "local preview" marker. */
+  const [logs, setLogs] = useState<Record<string, SessionLog>>(sessionLogs);
+  /** Ids touched in this tab — drives the "saved on this device" marker. */
   const [localIds, setLocalIds] = useState<string[]>([]);
   const [localSeq, setLocalSeq] = useState(1);
 
@@ -131,6 +138,28 @@ export function CalendarShell({
   const selectedEvent = useMemo(
     () => (selectedId ? (events.find((e) => e.id === selectedId) ?? null) : null),
     [events, selectedId],
+  );
+
+  /**
+   * The form's data, with the availability recomputed off the LIVE event list.
+   *
+   * The loader's copy is what the first render uses, and it has to stay the
+   * loader's copy or the server and the browser would disagree. But the moment
+   * a lesson is logged in this tab it becomes a real conflict for the next one,
+   * and a ruling computed from a list that is one save out of date would let
+   * him double-book the same hour. `now` is carried across untouched — it is
+   * the anchor, not a clock.
+   */
+  const formDataLive = useMemo<CalendarFormData>(
+    () => ({
+      ...formData,
+      availability: availabilityFromEvents(
+        events,
+        formData.availability.googleConnected,
+        formData.availability.now,
+      ),
+    }),
+    [events, formData],
   );
 
   /* --- navigation ------------------------------------------------------- */
@@ -294,78 +323,77 @@ export function CalendarShell({
     setSheet('create');
   }, []);
 
+  /**
+   * Both writes on this page go through `commitSession` and nothing else. It
+   * resolves against the browser today and says so; when Supabase lands, that
+   * one function changes and everything here stays put.
+   */
   const saveDraft = useCallback(
-    (draft: EventDraft) => {
-      const start = draft.allDay
-        ? `${draft.date}T00:00:00`
-        : `${draft.date}T${draft.startTime}:00`;
-      const end = draft.allDay
-        ? `${addDays(draft.date, 1)}T00:00:00`
-        : `${draft.date}T${draft.endTime}:00`;
+    (draft: SessionDraft) => {
+      const existing = draft.id
+        ? (events.find((e) => e.id === draft.id) ?? null)
+        : null;
+      const clientName =
+        formData.clients.find((c) => c.id === draft.clientId)?.name ?? 'Session';
+      const newId = `local-${localSeq}`;
 
-      if (draft.id) {
-        const id = draft.id;
+      void commitSession({
+        op: 'save',
+        draft,
+        existing,
+        clientName,
+        newId,
+      }).then((result) => {
+        if (!result.ok || !result.event) return;
+        const saved = result.event;
         setEvents((prev) =>
-          prev.map((event) =>
-            event.id === id
-              ? {
-                  ...event,
-                  title: draft.title,
-                  start,
-                  end,
-                  allDay: draft.allDay,
-                  kind: draft.kind,
-                  location: draft.location || null,
-                  description: draft.notes || null,
-                  athleteIds: draft.athleteIds,
-                }
-              : event,
-          ),
+          prev.some((e) => e.id === saved.id)
+            ? prev.map((e) => (e.id === saved.id ? saved : e))
+            : [...prev, saved],
         );
-        setLocalIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+        if (result.log) {
+          setLogs((prev) => ({...prev, [saved.id]: result.log as SessionLog}));
+        }
+        if (!existing) setLocalSeq((n) => n + 1);
+        setLocalIds((prev) =>
+          prev.includes(saved.id) ? prev : [...prev, saved.id],
+        );
+        setSelectedId(saved.id);
         setSheet('view');
-        return;
-      }
-
-      const id = `local-${localSeq}`;
-      setLocalSeq((n) => n + 1);
-      const created: CalendarEvent = {
-        id,
-        source: 'jvgold',
-        title: draft.title,
-        start,
-        end,
-        allDay: draft.allDay,
-        location: draft.location || null,
-        description: draft.notes || null,
-        sessionId: null,
-        kind: draft.kind,
-        offeringId: null,
-        athleteIds: draft.athleteIds,
-        amountCents: null,
-        googleEventId: null,
-        calendarId: null,
-        colorId: null,
-        recurrence: null,
-        attendees: [],
-        readOnly: false,
-        claimed: true,
-        syncedAt: null,
-      };
-      setEvents((prev) => [...prev, created]);
-      setLocalIds((prev) => [...prev, id]);
-      setSelectedId(id);
-      setSheet('view');
+      });
     },
-    [localSeq],
+    [events, formData.clients, localSeq],
   );
 
-  const removeEvent = useCallback((id: string) => {
-    setEvents((prev) => prev.filter((event) => event.id !== id));
-    setLocalIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    setSelectedId(null);
-    setSheet(null);
-  }, []);
+  const removeEvent = useCallback(
+    (id: string) => {
+      const existing = events.find((e) => e.id === id) ?? null;
+      if (!existing) return;
+      void commitSession({
+        op: 'delete',
+        draft: {...emptyDraft(existing.start.slice(0, 10)), id},
+        existing,
+        clientName: '',
+        newId: id,
+      }).then((result) => {
+        if (!result.ok || !result.removedId) return;
+        const removed = result.removedId;
+        setEvents((prev) => prev.filter((event) => event.id !== removed));
+        setLogs((prev) => {
+          if (!(removed in prev)) return prev;
+          const next = {...prev};
+          delete next[removed];
+          return next;
+        });
+        setLocalIds((prev) =>
+          prev.includes(removed) ? prev : [...prev, removed],
+        );
+        setSelectedId(null);
+        setSheet(null);
+      });
+    },
+    [events],
+  );
 
   const importedCount = useMemo(
     () => events.filter((e) => e.source === 'google').length,
@@ -439,7 +467,7 @@ export function CalendarShell({
         <p className="cal-tabular text-[0.5625rem] uppercase tracking-[0.18em] text-steel">
           {focusedDate} · {dayCount === 1 ? '1 event' : `${dayCount} events`}
           {localIds.length > 0
-            ? ` · ${localIds.length} local edit${localIds.length === 1 ? '' : 's'}`
+            ? ` · ${localIds.length} saved on this device`
             : ''}
         </p>
       </div>
@@ -457,7 +485,7 @@ export function CalendarShell({
         type="button"
         className="cal-fab"
         onClick={openCreate}
-        aria-label={`Add an event on ${longDate(focusedDate)}`}
+        aria-label={`Log a session on ${longDate(focusedDate)}`}
       >
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
           <path
@@ -473,8 +501,12 @@ export function CalendarShell({
         <EventSheet
           mode={sheet}
           event={sheet === 'create' ? null : selectedEvent}
+          log={
+            sheet !== 'create' && selectedId ? (logs[selectedId] ?? null) : null
+          }
           defaultDate={focusedDate}
-          roster={roster}
+          todayDate={todayDate}
+          data={formDataLive}
           isLocal={selectedId ? localIds.includes(selectedId) : false}
           onClose={closeSheet}
           onRequestEdit={() => setSheet('edit')}

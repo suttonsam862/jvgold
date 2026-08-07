@@ -7,6 +7,7 @@ const nav = [
   {to: '/deep-waters', label: 'DEEP WATERS', short: 'DEEP WATERS'},
   {to: '/train', label: 'TRAIN WITH JESSE', short: 'TRAIN'},
   {to: '/future-champions', label: 'FUTURE CHAMPIONS', short: 'FUTURE'},
+  {to: '/shop', label: 'SHOP', short: 'SHOP'},
 ];
 
 interface SiteHeaderProps {

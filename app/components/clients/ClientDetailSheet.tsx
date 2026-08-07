@@ -18,16 +18,51 @@
  * The sheet is driven by the `client` URL param, not by component state, so a
  * link to one athlete's record is shareable and the browser's back button
  * closes the sheet rather than leaving the page.
+ *
+ * EVERY LINE HERE IS READ AS FACT ABOUT A REAL ATHLETE. Where the record is
+ * blank the sheet says so — see `LedgerSession` and `NotRecorded` below. It
+ * never fills a gap with a plausible-looking default.
  */
 
 import {useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
-import type {Client, IsoDate, Payment, TrainingSession} from '~/lib/ops/types';
+import {useFetcher} from 'react-router';
+import type {
+  Client,
+  IsoDate,
+  Payment,
+  SessionKind,
+  TrainingSession,
+} from '~/lib/ops/types';
 import {ageOn, daysBetween, formatClock, formatMoney} from '~/lib/ops/types';
 import {formatDate, formatSince} from './filterModel';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * A session as this ledger can honestly render it.
+ *
+ * `TrainingSession` is the shape of a session the app itself created, where
+ * both of these are known by construction. A session imported from a coach's
+ * spreadsheet is not so lucky, so the two facts the ledger prints verbatim are
+ * widened here and checked at the point of render:
+ *
+ *   - `kind` is `null` when the source's Training Type cell was blank. Without
+ *     this the caller has to launder an invented string through
+ *     `as SessionKind` just to stop the sheet naming a kind nobody chose.
+ *   - `startTimeRecorded: false` means the clock in `start` is filler
+ *     (`T00:00:00`), not midnight — 25 of the 41 rows in Jesse's imported book
+ *     are like this. See `HISTORY_SESSION_META` in `~/lib/ops/history`.
+ *
+ * A plain `TrainingSession[]` still satisfies this type: a known kind is a
+ * kind, and an omitted flag means the clock on `start` is real.
+ */
+export interface LedgerSession extends Omit<TrainingSession, 'kind'> {
+  kind: SessionKind | null;
+  /** Omit or pass `true` when `start` carries a clock somebody wrote down. */
+  startTimeRecorded?: boolean;
+}
 
 export function ClientDetailSheet({
   client,
@@ -38,7 +73,7 @@ export function ClientDetailSheet({
 }: {
   client: Client;
   /** This athlete's sessions, newest first. */
-  sessions: TrainingSession[];
+  sessions: LedgerSession[];
   /** This athlete's payments, newest first. */
   payments: Payment[];
   anchorDate: IsoDate;
@@ -46,6 +81,8 @@ export function ClientDetailSheet({
 }) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  /** Posts the connect intent to this route's action. */
+  const connect = useFetcher<{ok?: boolean; clientId?: string; message?: string}>();
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -231,10 +268,6 @@ export function ClientDetailSheet({
                 label="Custom rate"
                 value={client.rateCents ? `${formatMoney(client.rateCents)} / hr` : 'Standard'}
               />
-              <Row
-                label="Shopify customer"
-                value={client.shopifyCustomerId ?? 'Not synced'}
-              />
             </dl>
             {client.tags.length ? (
               <p className="clients-sheet-tags">
@@ -272,6 +305,104 @@ export function ClientDetailSheet({
             )}
           </Section>
 
+          {/* ------------------------------------------------------ SHOPIFY */}
+          {/* Stated as a state, not as a field, because everything about
+              invoicing this family depends on it. "Not synced" buried in a
+              definition list is a fact he has to go looking for; this is the
+              answer to "can I bill them?" printed where he asks it. */}
+          <Section title="Shopify">
+            <p
+              className="clients-linkstate"
+              data-linked={client.shopifyCustomerId ? 'true' : 'false'}
+            >
+              {client.shopifyCustomerId ? (
+                <>
+                  <strong>Connected to Shopify</strong>
+                  <span className="tabular clients-linkstate-id">
+                    {client.shopifyCustomerId}
+                  </span>
+                  <span className="clients-linkstate-detail">
+                    Invoices for this family go to this customer record.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong>Not connected</strong>
+                  <span className="clients-linkstate-detail">
+                    There is no Shopify customer behind this record, so a
+                    payable invoice cannot be created or emailed for them.
+                  </span>
+                </>
+              )}
+            </p>
+
+            {client.shopifyCustomerId ? null : (
+              <connect.Form method="post" className="clients-linkstate-actions">
+                <input type="hidden" name="intent" value="connect-shopify" />
+                <input type="hidden" name="clientId" value={client.id} />
+                <button
+                  type="submit"
+                  className="clients-linkstate-btn"
+                  disabled={connect.state !== 'idle'}
+                >
+                  {connect.state === 'idle'
+                    ? 'Connect to Shopify'
+                    : 'Looking up…'}
+                </button>
+              </connect.Form>
+            )}
+
+            {connect.data?.message && connect.data.clientId === client.id ? (
+              <p
+                className={
+                  connect.data.ok ? 'clients-sheet-note' : 'clients-linkstate-error'
+                }
+                role={connect.data.ok ? 'status' : 'alert'}
+              >
+                {connect.data.message}
+              </p>
+            ) : null}
+          </Section>
+
+          {/* ---------------------------------------------- PENDING ACTIONS */}
+          {/* Recurring billing is NOT a button here. Two things have to exist
+              before an athlete can be enrolled on a plan — a subscription app
+              on the store and a configured selling plan — and neither does.
+              An "Enrol" control that quietly did nothing would be worse than
+              no control at all, so the work that is actually outstanding is
+              named instead. */}
+          <Section title="Pending actions">
+            <ol className="clients-pending">
+              <li>
+                <span className="clients-pending-label">
+                  Recurring billing enrolment
+                </span>
+                <span className="clients-pending-detail">
+                  Blocked. Enrolling {client.name} on a monthly plan needs a
+                  subscription app installed on the store and a selling plan
+                  configured against the membership product. Neither exists yet,
+                  so there is nothing to enrol them into and no control here to
+                  do it with.
+                </span>
+                <span className="clients-pending-next">
+                  Next: install the subscription app, create the selling plan
+                  group, then this becomes a one-tap enrolment.
+                </span>
+              </li>
+              {client.shopifyCustomerId ? null : (
+                <li>
+                  <span className="clients-pending-label">
+                    Shopify customer link
+                  </span>
+                  <span className="clients-pending-detail">
+                    Invoicing depends on it. Until this record has a customer
+                    id, no invoice can be sent from the session log.
+                  </span>
+                </li>
+              )}
+            </ol>
+          </Section>
+
           {/* --------------------------------------------------- COMPLIANCE */}
           <Section title="Compliance">
             <ul className="clients-check">
@@ -307,8 +438,20 @@ export function ClientDetailSheet({
                     <span className="clients-ledger-main">
                       <span className="clients-ledger-title">{session.focus}</span>
                       <span className="clients-ledger-sub">
-                        {formatClock(session.start)} · {session.minutes} min ·{' '}
-                        {session.kind}
+                        {/* A row whose clock was never written down carries
+                            `T00:00:00`. Running that through formatClock()
+                            prints "12:00 AM", which is not a missing time —
+                            it is a time, and one this athlete's session did
+                            not happen at. Draw the gap instead. */}
+                        {session.startTimeRecorded === false ? (
+                          <NotRecorded fact="time" />
+                        ) : (
+                          formatClock(session.start)
+                        )}
+                        {' · '}
+                        {session.minutes} min
+                        {' · '}
+                        {session.kind ?? <NotRecorded fact="training type" />}
                         {session.status !== 'completed'
                           ? ` · ${session.status}`
                           : ''}
@@ -370,6 +513,22 @@ export function ClientDetailSheet({
 }
 
 /* -------------------------------------------------------------------------- */
+
+/**
+ * A fact the record does not have.
+ *
+ * Sighted readers get the em dash this sheet already uses for "nothing on
+ * file"; screen readers get the words, because an em dash is announced as
+ * silence and silence in a run of facts reads as one more fact.
+ */
+function NotRecorded({fact}: {fact: string}) {
+  return (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{fact} not recorded</span>
+    </>
+  );
+}
 
 function Section({
   title,

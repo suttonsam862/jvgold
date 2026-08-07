@@ -2,220 +2,242 @@ import {useMemo} from 'react';
 import {MonthGrid} from './MonthGrid';
 import type {DayMeta} from './MonthGrid';
 import {
-  addDaysIso,
-  campById,
-  formatDateRange,
+  campDayOptions,
+  campDatesLabel,
+  campDepositLabel,
+  campEndIso,
+  campPricing,
+  campTotal,
+  canStartCampOn,
   formatLongDate,
-  formatMediumDate,
   formatMoney,
-  isScarce,
   isoInRange,
 } from '~/lib/offerings';
-import type {Camp, CampOffering} from '~/lib/offerings';
+import type {CampOffering} from '~/lib/offerings';
 
 interface CampPickerProps {
   offering: CampOffering;
   months: string[];
   monthKey: string;
   onMonthChange: (monthKey: string) => void;
-  campId: string | null;
-  onPickCamp: (camp: Camp) => void;
+  startIso: string | null;
+  days: number;
+  onPickStart: (iso: string) => void;
+  onPickDays: (days: number) => void;
   todayIso: string | null;
 }
 
+/**
+ * A camp is a booking of Jesse, not a ticket sold to a parent. The host picks
+ * how many consecutive days they want him and where day one falls; the total
+ * is the day rate multiplied out, recomputed on every change.
+ */
 export function CampPicker({
   offering,
   months,
   monthKey,
   onMonthChange,
-  campId,
-  onPickCamp,
+  startIso,
+  days,
+  onPickStart,
+  onPickDays,
   todayIso,
 }: CampPickerProps) {
-  const camp = campById(offering, campId);
+  const dayOptions = useMemo(() => campDayOptions(offering), [offering]);
+  // Total, deposit, balance and the balance due date all come off one engine
+  // object, so the picker cannot quote a balance the receipt disagrees with.
+  const pricing = campPricing(offering, days, startIso);
+  const {total, deposit} = pricing;
+  const endIso = startIso ? campEndIso(startIso, days) : null;
 
   const getDay = useMemo(() => {
     return (iso: string): DayMeta => {
       const isPast = todayIso !== null && iso < todayIso;
-      if (camp && isoInRange(iso, camp.startIso, camp.endIso)) {
+      const bookable = canStartCampOn(iso, days, todayIso);
+
+      if (startIso && endIso && isoInRange(iso, startIso, endIso)) {
         const span =
-          iso === camp.startIso
-            ? 'start'
-            : iso === camp.endIso
-              ? 'end'
-              : 'inside';
+          iso === startIso ? 'start' : iso === endIso ? 'end' : 'inside';
+        const which =
+          iso === startIso
+            ? 'day one'
+            : iso === endIso
+              ? `final day`
+              : 'camp day';
         return {
           state: 'open',
-          selectable: false,
+          selectable: bookable,
+          selected: iso === startIso,
           span,
-          label: `${formatLongDate(iso)} — ${camp.name}`,
+          label: `${formatLongDate(iso)} — ${which} of a ${days}-day booking`,
         };
       }
-      const otherCamp = offering.camps.find((c) =>
-        isoInRange(iso, c.startIso, c.endIso),
-      );
+
       return {
-        state: isPast ? 'past' : otherCamp ? 'limited' : 'closed',
-        selectable: false,
-        label: otherCamp
-          ? `${formatLongDate(iso)} — ${otherCamp.name}`
-          : formatLongDate(iso),
+        state: isPast ? 'past' : bookable ? 'open' : 'closed',
+        selectable: bookable,
+        label: bookable
+          ? `${formatLongDate(iso)} — start a ${days}-day booking here, ${formatMoney(total)}`
+          : `${formatLongDate(iso)} — not available as day one`,
       };
     };
-  }, [camp, offering.camps, todayIso]);
+  }, [days, endIso, startIso, todayIso, total]);
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
-      <div>
-        <p className="tag text-gold">THE CAMP CALENDAR</p>
+      <div className="flex flex-col gap-10">
+        <div>
+          <p className="tag text-gold">HOW MANY DAYS</p>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-stone/55">
+            You are booking Jesse, not a seat. The rate is{' '}
+            {formatMoney(offering.dayRate)} for every consecutive day he is on
+            your mats — however many athletes you put in front of him.
+          </p>
+
+          <div
+            role="group"
+            aria-label="Number of consecutive days"
+            className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5"
+          >
+            {dayOptions.map((option) => {
+              const on = option === days;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => onPickDays(option)}
+                  aria-pressed={on}
+                  aria-label={`${option} consecutive day${option === 1 ? '' : 's'}, ${formatMoney(
+                    campTotal(offering, option),
+                  )}`}
+                  className={`bk-option flex min-h-[64px] flex-col items-center justify-center gap-1 px-2 py-3 ${
+                    on ? 'text-gold' : 'text-stone/70'
+                  }`}
+                >
+                  <span className="display bk-money text-lg leading-none">
+                    {option}
+                  </span>
+                  <span className="bk-money text-[0.6rem] uppercase tracking-[0.12em] text-stone/45">
+                    {formatMoney(campTotal(offering, option))}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <p
+            role="status"
+            className="mt-4 text-[0.65rem] uppercase tracking-[0.16em] text-stone/45"
+          >
+            {days} consecutive day{days === 1 ? '' : 's'} ·{' '}
+            {formatMoney(offering.dayRate)} × {days} ={' '}
+            <span className="text-gold">{formatMoney(total)}</span>
+          </p>
+          <p className="mt-2 text-[0.65rem] uppercase tracking-[0.16em] text-stone/40">
+            Longer bookings are arranged directly — say so in the notes.
+          </p>
+        </div>
+
+        <div className="grid gap-8 border-t bk-hairline pt-8 sm:grid-cols-2">
+          <div>
+            <p className="tag text-gold">WHAT A DAY HOLDS</p>
+            <ul className="mt-4 flex flex-col gap-2">
+              {offering.dayFormat.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-baseline gap-2 text-sm leading-relaxed text-stone/65"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-[8px] w-[4px] shrink-0 -skew-x-[30deg] bg-gold"
+                  />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="tag text-gold">WHAT THE HOST BRINGS</p>
+            <ul className="mt-4 flex flex-col gap-2">
+              {offering.hostProvides.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-baseline gap-2 text-sm leading-relaxed text-stone/65"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-[8px] w-[4px] shrink-0 -skew-x-[30deg] bg-stone/40"
+                  />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t bk-hairline pt-8 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
+        <p className="tag text-gold">DAY ONE</p>
         <p
           role="status"
           className="mt-3 border border-gold/25 bg-gold/[0.07] px-3 py-2 text-[0.6rem] uppercase leading-relaxed tracking-[0.18em] text-gold"
         >
-          Sample availability — spot counts are illustrative until live capacity
-          is connected.
+          Sample availability — open dates are confirmed with Jesse before
+          anything is charged.
         </p>
-        <ul className="mt-5 flex flex-col gap-4">
-          {offering.camps.map((c) => {
-            const selected = c.id === campId;
-            const full = c.spotsRemaining === 0;
-            const past = todayIso !== null && c.endIso < todayIso;
-            const disabled = full || past;
-            return (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => !disabled && onPickCamp(c)}
-                  disabled={disabled}
-                  aria-pressed={selected}
-                  className="bk-option flex w-full flex-col gap-4 p-6"
-                >
-                  <span className="flex flex-wrap items-start justify-between gap-3">
-                    <span className="flex flex-col gap-2 text-left">
-                      <span className="text-[0.6rem] uppercase tracking-[0.2em] text-stone/45">
-                        {formatDateRange(c.startIso, c.endIso)} · {c.location}
-                      </span>
-                      <span
-                        className={`display text-xl tracking-[0.03em] ${selected ? 'text-gold' : 'text-stone'}`}
-                      >
-                        {c.name}
-                      </span>
-                    </span>
-                    <span className="flex flex-col items-start gap-1 sm:items-end">
-                      <span className="display bk-money text-xl text-stone">
-                        {formatMoney(c.price)}
-                      </span>
-                      <span className="text-[0.6rem] uppercase tracking-[0.18em] text-gold">
-                        {formatMoney(c.deposit)} deposit
-                      </span>
-                    </span>
-                  </span>
-
-                  <span className="text-left text-sm leading-relaxed text-stone/60">
-                    {c.summary}
-                  </span>
-
-                  <span className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.65rem] uppercase tracking-[0.16em]">
-                    <span className="text-stone/45">
-                      {c.nights + 1} days · {c.nights} nights
-                    </span>
-                    <span
-                      className={
-                        full
-                          ? 'text-stone/45'
-                          : isScarce(c.spotsRemaining, c.capacity)
-                            ? 'text-gold'
-                            : 'text-stone/45'
-                      }
-                    >
-                      {full
-                        ? 'Full — waitlist'
-                        : isScarce(c.spotsRemaining, c.capacity)
-                          ? `${c.spotsRemaining} spots left`
-                          : `${c.spotsRemaining} of ${c.capacity} open`}
-                    </span>
-                  </span>
-
-                  <span className="bk-meter" aria-hidden="true">
-                    <span
-                      style={{
-                        width: `${Math.round(((c.capacity - c.spotsRemaining) / c.capacity) * 100)}%`,
-                      }}
-                    />
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-5 text-xs leading-relaxed text-stone/45">
-          A camp that reads <em className="not-italic text-stone/70">Full</em> can
-          still take a waitlist — say so in the notes on the next step and
-          Jesse will call you the moment a bed opens.
-        </p>
-      </div>
-
-      <div className="border-t bk-hairline pt-8 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
-        <MonthGrid
-          gridLabel="Camp dates"
-          todayIso={todayIso}
-          monthKey={monthKey}
-          months={months}
-          onMonthChange={onMonthChange}
-          getDay={getDay}
-          footer={
-            camp ? (
-              <div className="flex flex-col gap-5">
-                <div>
-                  <p className="tag text-gold">{camp.name.toUpperCase()}</p>
-                  <p className="display mt-3 text-xl text-stone">
-                    {formatDateRange(camp.startIso, camp.endIso)}
-                  </p>
+        <div className="mt-5">
+          <MonthGrid
+            gridLabel="Camp start date"
+            todayIso={todayIso}
+            monthKey={monthKey}
+            months={months}
+            onMonthChange={onMonthChange}
+            getDay={getDay}
+            onSelect={onPickStart}
+            footer={
+              startIso && endIso ? (
+                <div className="flex flex-col gap-5">
+                  <div>
+                    <p className="tag text-gold">THE BLOCK</p>
+                    <p className="display mt-3 text-xl text-stone">
+                      {campDatesLabel(startIso, days)}
+                    </p>
+                    <p className="mt-2 text-[0.65rem] uppercase tracking-[0.16em] text-stone/45">
+                      {days} consecutive day{days === 1 ? '' : 's'} at{' '}
+                      {formatMoney(offering.dayRate)} a day
+                    </p>
+                  </div>
+                  <dl className="grid gap-3 border-t bk-hairline pt-5 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-stone/45">
+                        Deposit ({campDepositLabel(offering)})
+                      </dt>
+                      <dd className="display bk-money mt-2 text-2xl text-gold">
+                        {formatMoney(deposit)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-stone/45">
+                        Balance
+                      </dt>
+                      <dd className="bk-money mt-2 text-sm text-stone/70">
+                        {formatMoney(pricing.balance)}
+                        {pricing.balanceDueLabel
+                          ? ` due ${pricing.balanceDueLabel}`
+                          : ''}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-                <ul className="flex flex-col gap-2">
-                  {camp.includes.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-baseline gap-2 text-sm leading-relaxed text-stone/65"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="inline-block h-[8px] w-[4px] shrink-0 -skew-x-[30deg] bg-gold"
-                      />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <dl className="grid gap-3 border-t bk-hairline pt-5 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-stone/45">
-                      Deposit due now
-                    </dt>
-                    <dd className="display bk-money mt-2 text-2xl text-gold">
-                      {formatMoney(camp.deposit)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[0.6rem] uppercase tracking-[0.2em] text-stone/45">
-                      Balance
-                    </dt>
-                    <dd className="bk-money mt-2 text-sm text-stone/70">
-                      {formatMoney(camp.price - camp.deposit)} due{' '}
-                      {formatMediumDate(
-                        addDaysIso(camp.startIso, -offering.balanceDueDaysBefore),
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            ) : (
-              <p className="text-sm leading-relaxed text-stone/55">
-                Choose a camp and the whole block lights up here — every night
-                accounted for before you put money down.
-              </p>
-            )
-          }
-        />
+              ) : (
+                <p className="text-sm leading-relaxed text-stone/55">
+                  Choose the first day and the whole block lights up here — every
+                  day accounted for before you put money down.
+                </p>
+              )
+            }
+          />
+        </div>
       </div>
     </div>
   );

@@ -816,3 +816,695 @@ button.reset {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   .ops — THE OPERATIONS REGISTER
+   ==========================================================================
+
+   One register for every logged-in operational surface: /private/*, /portal/*.
+   Purely additive. Nothing above this comment was renamed, reordered or removed.
+
+   WHY THIS EXISTS
+   Eight routes each re-declared `min-h-[100svh] bg-onyx-deep text-stone` on
+   their own root, and three files each carried their own Panel. This block plus
+   app/components/ops/{Screen,Primitives}.tsx is the single place a register
+   change is now made.
+
+   THE CONTRAST CONSTRAINT — measured against the warm stone ground #E6E3DD:
+     --ink        #1A1A1A   13.59:1   body text
+     --ink-mute   #5A5A5A    5.38:1   secondary/meta text  (NOT --steel, 4.16:1)
+     --ink-accent #7A5E29    4.73:1   gold's voice AS TEXT  (NOT --gold, 1.87:1)
+   Brand gold survives as a FILL — a gold plate carrying onyx text (7.95:1),
+   which is how the selected chip is built. Gold is never a text colour on a
+   light ground. If you are about to write `text-gold` or `text-steel` on stone,
+   reach for --ink-accent / --ink-mute instead.
+
+   LIGHT IS THE DEFAULT. `.ops-dark` re-binds the same token names, so a future
+   dark mode is one class rather than a rewrite. Any dark plate nested inside an
+   .ops screen (a detail sheet, a photo card) must carry .ops-dark so the tokens
+   flip with the ground under them.
+
+   AUTHORING RULE for the .ops-* classes below: they carry colour, type, border
+   and position only — never margin, padding-block on rows, width or grid. These
+   rules sit OUTSIDE Tailwind's cascade layers, so anything they set would beat
+   a utility class on the same element. Spacing stays the caller's job.
+   ========================================================================== */
+
+.ops {
+  /* ---- ink: what text is allowed to be ---- */
+  --ink: var(--onyx); /* 13.59:1 */
+  --ink-mute: #5a5a5a; /*  5.38:1 */
+  --ink-accent: #7a5e29; /*  4.73:1 — bronze; gold's voice as type */
+  --ink-warn: #9a3412; /*  5.70:1 — overdue, missing, owing */
+  --ink-invert: var(--stone); /* type sitting on a plate of --ink */
+
+  /* ---- ground ---- */
+  --surface: var(--stone);
+  --surface-raised: var(--stone-warm);
+  --surface-sunken: color-mix(in srgb, var(--onyx) 5%, var(--stone));
+  --surface-plate: var(--onyx); /* the dark object on the light page */
+  --surface-veil: color-mix(in srgb, var(--stone) 86%, transparent);
+
+  /* ---- hairlines: rules over cards, always ---- */
+  --line: color-mix(in srgb, var(--onyx) 14%, transparent);
+  --line-strong: color-mix(in srgb, var(--onyx) 28%, transparent);
+
+  /* ---- state ---- */
+  --focus-ring: var(--ink-accent);
+  --focus-offset: 3px;
+  --selected-bg: var(--gold); /* the gold PLATE */
+  --selected-ink: var(--onyx-deep); /* 7.95:1 on that plate */
+  --selected-line: var(--gold-deep);
+  --accent-fill: var(--gold); /* fills, bars, meters — never type */
+  --accent-wash: color-mix(in srgb, var(--gold) 12%, transparent);
+
+  /* ---- geometry ---- */
+  --ops-measure: 1440px;
+  --ops-gutter: 1.25rem;
+  --ops-ease: var(--ease-lux);
+
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* The clients table needs the extra 120px. */
+.ops-wide {
+  --ops-measure: 1560px;
+}
+
+.ops-screen {
+  min-height: 100svh;
+}
+
+/* --------------------------------------------------------------------------
+   .ops-dark — the same token names, re-bound. Values re-measured on #111111:
+     --ink        #E6E3DD  15.6:1
+     --ink-mute   #8C8C8C   5.66:1   (--steel would be 3.57:1 here — fails)
+     --ink-accent #C8A25B   7.95:1   gold IS legible as type on near-black
+   -------------------------------------------------------------------------- */
+.ops-dark {
+  --ink: var(--stone);
+  --ink-mute: #8c8c8c;
+  --ink-accent: var(--gold);
+  --ink-warn: #e8886a;
+  --ink-invert: var(--onyx-deep);
+
+  --surface: var(--onyx-deep);
+  --surface-raised: var(--onyx);
+  --surface-sunken: #0b0b0b;
+  --surface-plate: var(--stone);
+  --surface-veil: color-mix(in srgb, var(--onyx-deep) 86%, transparent);
+
+  --line: color-mix(in srgb, #ffffff 14%, transparent);
+  --line-strong: color-mix(in srgb, #ffffff 28%, transparent);
+
+  --focus-ring: var(--gold);
+  --selected-bg: var(--gold);
+  --selected-ink: var(--onyx-deep);
+  --selected-line: var(--gold);
+  --accent-fill: var(--gold);
+  --accent-wash: color-mix(in srgb, var(--gold) 14%, transparent);
+
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ---------- semantic text + hairline helpers ---------- */
+.ops-ink {
+  color: var(--ink);
+}
+.ops-mute {
+  color: var(--ink-mute);
+}
+.ops-accent {
+  color: var(--ink-accent);
+}
+.ops-warn {
+  color: var(--ink-warn);
+}
+.ops-rule {
+  border-color: var(--line);
+}
+.ops-rule-strong {
+  border-color: var(--line-strong);
+}
+
+/* COMPATIBILITY NET.
+   Existing markup is dense with `rule-light`, `text-steel`, `text-gold` and
+   `text-stone` — all of which were written for a black page and all of which
+   fail on stone. Inside .ops those four re-resolve to the register's tokens, in
+   whichever direction the register currently points. This is a safety net for
+   the migration, not the API: write .ops-mute / .ops-accent in new code. */
+.ops :is(.rule, .rule-light),
+.ops:is(.rule, .rule-light) {
+  border-color: var(--line);
+}
+.ops :is(.text-stone, .text-onyx, .text-onyx-deep) {
+  color: var(--ink);
+}
+.ops :is(.text-steel, .text-steel\/70, .text-steel\/60, .text-steel\/50) {
+  color: var(--ink-mute);
+}
+.ops :is(.text-gold, .text-gold-deep) {
+  color: var(--ink-accent);
+}
+
+/* ---------- focus: the global ring is gold, which is 1.87:1 on stone ---------- */
+.ops :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 1px;
+}
+
+/* ---------- shell ---------- */
+.ops-shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--ops-measure);
+  padding-inline: var(--ops-gutter);
+}
+@media (min-width: 768px) {
+  .ops-shell {
+    --ops-gutter: 2.5rem;
+  }
+}
+
+/* ---------- masthead ---------- */
+.ops-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface-veil);
+  backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.ops-head-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding-block: 1rem;
+}
+@media (min-width: 768px) {
+  .ops-head-inner {
+    flex-wrap: nowrap;
+    align-items: center;
+    padding-block: 1.25rem;
+  }
+}
+.ops-head-id {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .ops-head-id {
+    gap: 1.25rem;
+  }
+}
+.ops-mark {
+  flex: none;
+  color: var(--ink-accent);
+}
+.ops-eyebrow {
+  color: var(--ink-accent);
+  display: block;
+}
+.ops-title {
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  line-height: 1;
+  margin: 0;
+  color: var(--ink);
+}
+.ops-eyebrow + .ops-title {
+  margin-top: 0.25rem;
+}
+.ops-subtitle {
+  color: var(--ink-mute);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-width: 56ch;
+}
+.ops-title + .ops-subtitle {
+  margin-top: 0.5rem;
+}
+.ops-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+.ops-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  text-decoration: none;
+  transition: color var(--dur-base) var(--ops-ease);
+}
+.ops-back:hover {
+  color: var(--ink-accent);
+}
+.ops-back + .ops-eyebrow,
+.ops-back + .ops-title {
+  margin-top: 0.5rem;
+}
+
+/* ---------- hub nav ---------- */
+.ops-nav {
+  border-top: 1px solid var(--line);
+}
+.ops-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-block: 0.75rem;
+  scrollbar-width: none;
+}
+.ops-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 768px) {
+  .ops-nav-inner {
+    gap: 2rem;
+  }
+}
+.ops-nav-link {
+  position: relative;
+  white-space: nowrap;
+  color: var(--ink-mute);
+  text-decoration: none;
+  padding-block: 0.35rem;
+  transition: color var(--dur-base) var(--ops-ease);
+}
+.ops-nav-link:hover {
+  color: var(--ink);
+}
+.ops-nav-link[aria-current='page'] {
+  color: var(--ink-accent);
+}
+.ops-nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.75rem;
+  height: 1px;
+  background: var(--accent-fill);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur-base) var(--ops-ease);
+}
+.ops-nav-link:hover::after,
+.ops-nav-link:focus-visible::after,
+.ops-nav-link[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+/* ---------- preview-data banner ----------
+   Type is --ink, not gold: this strip is 10px uppercase with wide tracking, the
+   worst possible case for a low-contrast colour. Gold identifies it as a fill
+   and a hairline instead. */
+.ops-banner {
+  background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--gold-deep) 45%, transparent);
+  color: var(--ink);
+  font-size: 0.625rem;
+  line-height: 1.7;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.75rem var(--ops-gutter);
+}
+@media (min-width: 768px) {
+  .ops-banner {
+    --ops-gutter: 2.5rem;
+  }
+}
+
+/* ---------- main ---------- */
+.ops-main {
+  padding-block: 3.5rem 6rem;
+}
+@media (min-width: 768px) {
+  .ops-main {
+    padding-block: 5rem 8rem;
+  }
+}
+
+/* ---------- skip link ---------- */
+.ops-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 60;
+}
+.ops-skip:focus {
+  left: 1rem;
+  top: 1rem;
+  background: var(--ink);
+  color: var(--ink-invert);
+  padding: 0.75rem 1.25rem;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ---------- panel ---------- */
+.ops-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.75rem;
+}
+.ops-panel-label {
+  color: var(--ink-accent);
+  margin: 0;
+}
+.ops-panel-aside {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+.ops-panel-meta {
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin: 0;
+}
+.ops-panel-body {
+  padding-top: var(--ops-panel-gap, 1.25rem);
+}
+
+/* ---------- figure ---------- */
+.ops-figure-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  font-size: var(--ops-figure-size, clamp(2.25rem, 7vw, 3.25rem));
+  color: var(--ink);
+  margin: 0;
+}
+.ops-figure-md {
+  --ops-figure-size: clamp(1.75rem, 4.5vw, 2.25rem);
+}
+.ops-figure-sm {
+  --ops-figure-size: clamp(1.25rem, 3vw, 1.5rem);
+}
+.ops-figure-accent {
+  color: var(--ink-accent);
+}
+.ops-figure-mute {
+  color: var(--ink-mute);
+}
+.ops-figure-warn {
+  color: var(--ink-warn);
+}
+.ops-figure-label {
+  color: var(--ink-mute);
+  font-size: 0.875rem;
+  margin: 0;
+}
+.ops-figure-sub {
+  color: var(--ink-mute);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* ---------- hairline row ----------
+   Border only. Vertical rhythm belongs to the caller. */
+.ops-row {
+  border-top: 1px solid var(--line);
+}
+.ops-row-first {
+  border-top: 0;
+}
+
+/* ---------- hairline grid (the light twin of .private-grid) ---------- */
+.ops-grid {
+  display: grid;
+  gap: 1px;
+  background-color: var(--line);
+  border-block: 1px solid var(--line);
+}
+.ops-grid > * {
+  background-color: var(--surface);
+}
+
+/* ---------- table ---------- */
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ops-table th,
+.ops-table td {
+  text-align: left;
+  vertical-align: middle;
+}
+.ops-table th {
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--line-strong);
+}
+.ops-table tbody tr + tr {
+  border-top: 1px solid var(--line);
+}
+.ops-table tbody tr {
+  transition: background-color var(--dur-fast) var(--ops-ease);
+}
+.ops-table tbody tr:hover {
+  background-color: var(--accent-wash);
+}
+.ops-table td.ops-td-right,
+.ops-table th.ops-th-right {
+  text-align: right;
+}
+
+/* ---------- chip: the gold PLATE, which is how gold stays legible ---------- */
+.ops-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-mute);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ops-ease),
+    border-color var(--dur-fast) var(--ops-ease),
+    background-color var(--dur-fast) var(--ops-ease);
+}
+.ops-chip:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.ops-chip[aria-pressed='true'],
+.ops-chip[aria-checked='true'],
+.ops-chip[aria-current='page'],
+.ops-chip.is-selected {
+  background: var(--selected-bg);
+  border-color: var(--selected-line);
+  color: var(--selected-ink);
+}
+
+/* ---------- buttons ---------- */
+.ops-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-family: 'Bai Jamjuree', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.75rem;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color var(--dur-base) var(--ops-ease),
+    border-color var(--dur-base) var(--ops-ease),
+    background-color var(--dur-base) var(--ops-ease);
+}
+.ops-btn:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--ink-invert);
+}
+.ops-btn-primary {
+  background: var(--selected-bg);
+  border-color: var(--selected-line);
+  color: var(--selected-ink);
+}
+.ops-btn-primary:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--ink-invert);
+}
+.ops-btn-quiet {
+  color: var(--ink-mute);
+  border-color: var(--line);
+}
+.ops-btn[disabled],
+.ops-btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- status dot ---------- */
+.ops-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  vertical-align: middle;
+}
+.ops-dot-accent {
+  color: var(--ink-accent);
+}
+.ops-dot-mute {
+  color: var(--ink-mute);
+}
+.ops-dot-ink {
+  color: var(--ink);
+}
+.ops-dot-warn {
+  color: var(--ink-warn);
+}
+
+/* ---------- meter ---------- */
+.ops-meter {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  background: var(--line-strong);
+  overflow: hidden;
+}
+.ops-meter-fill {
+  display: block;
+  height: 100%;
+  width: var(--ops-meter, 0%);
+  background: var(--accent-fill);
+  transform-origin: left center;
+  transition: width var(--dur-slow) var(--ops-ease);
+}
+
+/* ---------- screen-reader-only ---------- */
+.ops-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ---------- controlled entrance ----------
+   For pages that drive their own choreography from a `ready` flag rather than
+   the scroll observer (finance does this so a period switch morphs instead of
+   re-animating). Panels without an `entered` prop use [data-reveal] instead.
+
+   The base rule is the FINISHED state, so with JavaScript off — or if a page
+   forgets to flip its flag — the content is visible, never stranded at
+   opacity 0. Only the `.js` variant hides it. Same contract as .fin-rise. */
+.ops-rise {
+  opacity: 1;
+  transform: none;
+}
+.js .ops-rise {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity var(--dur-slow) var(--ops-ease),
+    transform var(--dur-slow) var(--ops-ease);
+  transition-delay: var(--ops-delay, 0ms);
+  will-change: opacity, transform;
+}
+.js .ops-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- chart data disclosure ----------
+   The collapsible table under every chart. No figure on these screens is
+   available to sighted users only. */
+.ops-data {
+  border-top: 1px solid var(--line);
+}
+.ops-data > summary {
+  cursor: pointer;
+  color: var(--ink-mute);
+  /* A comfortable target without turning the row into a button slab. */
+  padding-block: 0.75rem;
+  list-style-position: outside;
+  transition: color var(--dur-fast) var(--ops-ease);
+}
+.ops-data > summary:hover {
+  color: var(--ink-accent);
+}
+.ops-data-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ops *,
+  .ops *::before,
+  .ops *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  /* Must out-specify `.js .ops-rise`, or reduced-motion visitors would be
+     left staring at an element parked at opacity 0. */
+  .ops-rise,
+  .js .ops-rise {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .ops-nav-link::after {
+    transition: none;
+  }
+  .ops-meter-fill {
+    transition: none;
+  }
+}

@@ -2,83 +2,87 @@
    PRODUCT MANAGEMENT — /private/products
    ==========================================================================
 
-   Dark register. Hairlines instead of cards, tabular figures everywhere, gold
-   reserved for the single most important number in a group. Designed at 390px
-   first: every row stacks, nothing scrolls sideways, every control clears
-   44px. Plain CSS — the tokens come from jvgold.css.
+   LIGHT REGISTER. Hairlines instead of cards, tabular figures everywhere,
+   gold reserved for the single most important number in a group. Designed at
+   390px first: every row stacks, nothing scrolls sideways, every control
+   clears 44px. Plain CSS — the tokens come from jvgold.css.
+
+   ONE BLOCK OWNS THE REGISTER. Every rule below reaches for a --pm-* token and
+   nothing in this file names a colour twice, so the retint was this block plus
+   the four places that had escaped it (the selection wash, the price, the
+   accent figure and the sheet ground). Measured on the stone ground #E6E3DD:
+
+     --pm-ink    #1A1A1A            13.59:1  titles, figures, field values
+     --pm-mute   onyx @ 68%          6.2:1   sub-lines, row meta, help text
+     --pm-faint  onyx @ 55%          4.6:1   the smallest uppercase labels
+     --pm-accent #7A5E29             4.73:1  gold's VOICE as type (bronze)
+
+   --pm-gold is now a FILL ONLY token: the checkbox tick, the composition bar,
+   the revenue meter, the selection edge. Where gold used to be a letterform —
+   the price, the accent stat, the sync dot label, the banner — it is bronze.
    ======================================================================== */
 
 .pm-page {
-  --pm-line: rgba(230, 227, 221, 0.13);
-  --pm-line-strong: rgba(230, 227, 221, 0.24);
-  --pm-ink: #e6e3dd;
-  --pm-mute: rgba(230, 227, 221, 0.52);
-  --pm-faint: rgba(230, 227, 221, 0.34);
-  --pm-gold: #c8a25b;
+  /* ---- hairlines ---- */
+  --pm-line: color-mix(in srgb, var(--onyx) 13%, transparent);
+  --pm-line-strong: color-mix(in srgb, var(--onyx) 26%, transparent);
+
+  /* ---- ink ---- */
+  --pm-ink: var(--ink, #1a1a1a);
+  --pm-mute: color-mix(in srgb, var(--onyx) 68%, transparent);
+  --pm-faint: color-mix(in srgb, var(--onyx) 55%, transparent);
+  --pm-ghost: color-mix(in srgb, var(--onyx) 38%, transparent);
+  --pm-accent: var(--ink-accent, #7a5e29);
+  --pm-bad: var(--ink-warn, #9a3412);
+
+  /* ---- ground ---- */
+  --pm-bg: var(--surface, #e6e3dd);
+  --pm-raise: var(--surface-raised, #efece6);
+  --pm-veil: color-mix(in srgb, var(--stone) 96%, transparent);
+  --pm-scrim: color-mix(in srgb, var(--onyx-deep) 48%, transparent);
+
+  /* ---- gold: a FILL, never a letterform on this ground ---- */
+  --pm-gold: var(--accent-fill, #c8a25b);
+  --pm-plate: var(--selected-bg, #c8a25b);
+  --pm-plate-ink: var(--selected-ink, #111111);
+  --pm-wash: color-mix(in srgb, var(--gold) 16%, transparent);
+  --pm-edge: color-mix(in srgb, var(--gold-deep) 55%, transparent);
+
   --pm-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --pm-slow: 680ms;
 
-  min-height: 100vh;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ------------------------------------------------------------------ head */
+/* The same names re-bound on a near-black ground. */
+.ops-dark.pm-page,
+.ops-dark .pm-page {
+  --pm-line: rgba(230, 227, 221, 0.13);
+  --pm-line-strong: rgba(230, 227, 221, 0.24);
 
-.pm-head {
-  border-bottom: 1px solid var(--pm-line);
-  padding: 1.25rem 1.25rem 1.5rem;
+  --pm-ink: #e6e3dd;
+  --pm-mute: rgba(230, 227, 221, 0.62);
+  --pm-faint: rgba(230, 227, 221, 0.44);
+  --pm-ghost: rgba(230, 227, 221, 0.3);
+  --pm-accent: #c8a25b;
+  --pm-bad: #e8b4a0;
+
+  --pm-bg: #111111;
+  --pm-raise: #171717;
+  --pm-veil: rgba(17, 17, 17, 0.96);
+  --pm-scrim: rgba(9, 9, 9, 0.72);
+
+  --pm-wash: rgba(200, 162, 91, 0.14);
+  --pm-edge: rgba(200, 162, 91, 0.4);
 }
 
-.pm-head-inner {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-  margin-inline: auto;
-  max-width: 1440px;
-}
-
-.pm-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 44px;
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--pm-mute);
-  transition: color var(--pm-slow) var(--pm-ease);
-}
-
-.pm-back:hover,
-.pm-back:focus-visible {
-  color: var(--pm-gold);
-}
-
-.pm-h1 {
-  font-size: clamp(1.9rem, 8vw, 3rem);
-  line-height: 0.95;
-  margin-top: 0.35rem;
-}
-
-.pm-banner {
-  border-bottom: 1px solid rgba(200, 162, 91, 0.25);
-  background: rgba(200, 162, 91, 0.07);
-  color: var(--pm-gold);
-  font-size: 0.625rem;
-  letter-spacing: 0.18em;
-  line-height: 1.7;
-  padding: 0.75rem 1.25rem;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.pm-main {
-  margin-inline: auto;
-  max-width: 1440px;
-  padding: 2.25rem 1.25rem 8rem;
-}
+/* ------------------------------------------------------------------ head
+   The masthead, the "changes held in this browser" banner and the page
+   measure all moved to <Screen> / .ops-* — one scaffold for every operational
+   surface, so the 1440px measure and the sticky header are declared once. The
+   .pm-head / .pm-banner / .pm-main rules that used to live here went with
+   them rather than being retinted in place.
+   ------------------------------------------------------------------------ */
 
 /* ----------------------------------------------------------------- stats */
 
@@ -106,7 +110,9 @@
 }
 
 .pm-stat-accent {
-  color: var(--pm-gold);
+  /* Bronze. This is the one accented figure in the group, and at 2.4rem gold
+     would be 1.87:1 on stone. */
+  color: var(--pm-accent);
 }
 
 .pm-stat-sub {
@@ -129,19 +135,22 @@
 }
 
 .pm-seg-track {
-  fill: rgba(230, 227, 221, 0.1);
+  fill: color-mix(in srgb, var(--onyx) 10%, transparent);
 }
 
+/* The composition bar is the ONE place gold stays literal gold: it is a 4px
+   filled area beside two grey segments, read by comparison with its
+   neighbours rather than against the page. */
 .pm-seg-active {
   fill: var(--pm-gold);
 }
 
 .pm-seg-draft {
-  fill: rgba(230, 227, 221, 0.55);
+  fill: color-mix(in srgb, var(--onyx) 45%, transparent);
 }
 
 .pm-seg-archived {
-  fill: rgba(230, 227, 221, 0.25);
+  fill: color-mix(in srgb, var(--onyx) 22%, transparent);
 }
 
 .pm-legend {
@@ -164,7 +173,7 @@
 .pm-legend-mark {
   width: 14px;
   height: 2px;
-  background: rgba(230, 227, 221, 0.3);
+  background: color-mix(in srgb, var(--onyx) 30%, transparent);
 }
 
 .pm-legend-mark[data-seg='active'] {
@@ -173,7 +182,7 @@
 }
 
 .pm-legend-mark[data-seg='draft'] {
-  background: rgba(230, 227, 221, 0.55);
+  background: color-mix(in srgb, var(--onyx) 45%, transparent);
 }
 
 /* --------------------------------------------------------------- toolbar */
@@ -211,9 +220,12 @@
   color: var(--pm-ink);
 }
 
+/* Selected = a gold PLATE carrying onyx (7.95:1), the same move .ops-chip
+   makes. Gold text on a gold underline would have been 1.87:1. */
 .pm-filter[aria-pressed='true'] {
-  color: var(--pm-gold);
-  border-bottom-color: var(--pm-gold);
+  background: var(--pm-plate);
+  border-color: var(--gold-deep);
+  color: var(--pm-plate-ink);
 }
 
 .pm-search {
@@ -237,21 +249,21 @@
 }
 
 .pm-input::placeholder {
-  color: rgba(230, 227, 221, 0.28);
+  color: var(--pm-ghost);
   letter-spacing: 0.04em;
 }
 
 .pm-input:hover {
-  border-bottom-color: rgba(230, 227, 221, 0.4);
+  border-bottom-color: color-mix(in srgb, var(--onyx) 40%, transparent);
 }
 
 .pm-input:focus {
-  border-bottom-color: var(--pm-gold);
+  border-bottom-color: var(--pm-accent);
   outline: none;
 }
 
 .pm-input:focus-visible {
-  outline: 2px solid var(--pm-gold);
+  outline: 2px solid var(--focus-ring, var(--pm-accent));
   outline-offset: 4px;
 }
 
@@ -278,8 +290,8 @@
 }
 
 .pm-select option {
-  background: #111111;
-  color: #e6e3dd;
+  background: var(--pm-bg);
+  color: var(--pm-ink);
 }
 
 .pm-money-wrap,
@@ -293,7 +305,7 @@
 
 .pm-money-wrap:focus-within,
 .pm-handle-wrap:focus-within {
-  border-bottom-color: var(--pm-gold);
+  border-bottom-color: var(--pm-accent);
 }
 
 .pm-money-wrap .pm-input,
@@ -310,7 +322,7 @@
 
 .pm-input-money {
   font-size: 1.125rem;
-  color: var(--pm-gold);
+  color: var(--pm-accent);
 }
 
 .pm-label {
@@ -330,7 +342,7 @@
 }
 
 .pm-error {
-  color: #e8b4a0;
+  color: var(--pm-bad);
   font-size: 0.8125rem;
   line-height: 1.5;
   margin-top: 0.45rem;
@@ -339,28 +351,33 @@
 .pm-field[data-invalid='true'] .pm-input,
 .pm-field[data-invalid='true'] .pm-money-wrap,
 .pm-field[data-invalid='true'] .pm-handle-wrap {
-  border-bottom-color: #e8b4a0;
+  border-bottom-color: var(--pm-bad);
 }
 
 /* --------------------------------------------------------------- buttons */
 
+/* The primary action arrives AS the plate rather than becoming one on hover —
+   an outlined gold button reads as a 1.87:1 hairline on stone. */
 .pm-primary {
   min-height: 44px;
   padding: 0 1.4rem;
-  border: 1px solid var(--pm-gold);
-  color: var(--pm-gold);
+  border: 1px solid var(--gold-deep);
+  background: var(--pm-plate);
+  color: var(--pm-plate-ink);
   font-size: 0.6875rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   transition:
     background-color var(--pm-slow) var(--pm-ease),
+    border-color var(--pm-slow) var(--pm-ease),
     color var(--pm-slow) var(--pm-ease);
 }
 
 .pm-primary:hover,
 .pm-primary:focus-visible {
-  background: var(--pm-gold);
-  color: #111111;
+  background: var(--pm-ink);
+  border-color: var(--pm-ink);
+  color: var(--pm-bg);
 }
 
 .pm-ghost {
@@ -375,7 +392,7 @@
 
 .pm-ghost:hover,
 .pm-ghost:focus-visible {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
 }
 
 .pm-ghost-lg {
@@ -385,13 +402,13 @@
 
 .pm-ghost-lg:hover,
 .pm-ghost-lg:focus-visible {
-  border-color: var(--pm-gold);
+  border-color: var(--pm-accent);
 }
 
 .pm-danger:hover,
 .pm-danger:focus-visible {
-  color: #e8b4a0;
-  border-color: rgba(232, 180, 160, 0.6);
+  color: var(--pm-bad);
+  border-color: color-mix(in srgb, var(--pm-bad) 60%, transparent);
 }
 
 /* ---------------------------------------------------------------- notice */
@@ -402,8 +419,8 @@
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  border: 1px solid rgba(200, 162, 91, 0.3);
-  background: rgba(200, 162, 91, 0.06);
+  border: 1px solid var(--pm-edge);
+  background: color-mix(in srgb, var(--gold) 12%, var(--pm-bg));
   padding: 0.5rem 0.75rem 0.5rem 1rem;
   margin-bottom: 1rem;
   animation: pm-notice-in 520ms var(--pm-ease) both;
@@ -439,7 +456,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   border: 1px solid var(--pm-line-strong);
-  background: rgba(17, 17, 17, 0.96);
+  background: var(--pm-veil);
   backdrop-filter: blur(8px);
   padding: 0.65rem 0.85rem;
   margin-bottom: 1rem;
@@ -456,7 +473,7 @@
 }
 
 .pm-bulk-figure {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
   font-size: 1.25rem;
   letter-spacing: 0;
 }
@@ -513,9 +530,11 @@
   transition: background-color 420ms var(--pm-ease);
 }
 
+/* A selected row: a gold wash for the area and a BRONZE edge, because a 2px
+   marker is a non-text UI component and has to clear 3:1 — gold is 1.87:1. */
 .pm-row[data-selected='true'] {
-  background: rgba(200, 162, 91, 0.05);
-  box-shadow: inset 2px 0 0 var(--pm-gold);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--pm-accent);
 }
 
 .pm-row-lead {
@@ -548,9 +567,12 @@
     background-color 400ms var(--pm-ease);
 }
 
+/* Gold fill, ONYX ring. The gold alone is 1.87:1 against stone and the tick
+   would read as an empty box at arm's length; the ring supplies the boundary
+   contrast and lets the fill stay brand gold. */
 .pm-check input[type='checkbox']:checked {
   background: var(--pm-gold);
-  border-color: var(--pm-gold);
+  border-color: var(--pm-ink);
 }
 
 .pm-check input[type='checkbox']:disabled {
@@ -559,7 +581,7 @@
 }
 
 .pm-check input[type='checkbox']:focus-visible {
-  outline: 2px solid var(--pm-gold);
+  outline: 2px solid var(--focus-ring, var(--pm-accent));
   outline-offset: 3px;
 }
 
@@ -572,7 +594,7 @@
   width: 46px;
   height: 46px;
   overflow: hidden;
-  background: rgba(230, 227, 221, 0.05);
+  background: color-mix(in srgb, var(--onyx) 5%, transparent);
   border: 1px solid var(--pm-line);
 }
 
@@ -596,7 +618,7 @@
 .pm-plate-glyph {
   width: 14px;
   height: 14px;
-  border: 1px solid rgba(230, 227, 221, 0.22);
+  border: 1px solid color-mix(in srgb, var(--onyx) 25%, transparent);
   transform: rotate(45deg);
 }
 
@@ -621,7 +643,7 @@
 
 .pm-title:hover,
 .pm-title:focus-visible {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
 }
 
 .pm-sub {
@@ -638,7 +660,7 @@
 .pm-dot {
   width: 2px;
   height: 2px;
-  background: rgba(230, 227, 221, 0.35);
+  background: color-mix(in srgb, var(--onyx) 35%, transparent);
   border-radius: 50%;
 }
 
@@ -676,7 +698,7 @@
 }
 
 .pm-price {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
   font-size: 1.0625rem;
   letter-spacing: 0.01em;
   line-height: 1.1;
@@ -738,7 +760,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(230, 227, 221, 0.4);
+  background: color-mix(in srgb, var(--onyx) 40%, transparent);
 }
 
 .pm-status[data-status='active'] {
@@ -746,7 +768,7 @@
 }
 
 .pm-status[data-status='active'] .pm-status-dot {
-  background: var(--pm-gold);
+  background: var(--pm-accent);
 }
 
 .pm-status[data-status='archived'] {
@@ -773,7 +795,7 @@
   height: 5px;
   width: 5px;
   border-radius: 50%;
-  background: var(--pm-gold);
+  background: var(--pm-accent);
 }
 
 .pm-sync-id {
@@ -782,9 +804,10 @@
   text-transform: none;
 }
 
+/* "Changed in this browser" — it must be READ, so it keeps full strength.
+   The old 0.85 opacity dropped bronze from 4.73:1 to about 4.0:1. */
 .pm-local {
-  color: var(--pm-gold);
-  opacity: 0.85;
+  color: var(--pm-accent);
 }
 
 .pm-meta-figures {
@@ -813,14 +836,17 @@
   display: block;
   width: 56px;
   height: 1px;
-  background: rgba(230, 227, 221, 0.14);
+  background: color-mix(in srgb, var(--onyx) 18%, transparent);
   flex: none;
 }
 
+/* Bronze, not gold: a 1px fill has to be told apart from its own track, and
+   gold sits almost exactly on the track's lightness once both are over
+   stone. */
 .pm-meter-fill {
   display: block;
   height: 100%;
-  background: var(--pm-gold);
+  background: var(--pm-accent);
   transition: width var(--pm-slow) var(--pm-ease);
 }
 
@@ -897,7 +923,7 @@
 }
 
 .pm-coverage-price {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
   font-size: 0.9375rem;
 }
 
@@ -910,7 +936,7 @@
 }
 
 .pm-coverage-missing {
-  color: #e8b4a0;
+  color: var(--pm-bad);
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -919,7 +945,7 @@
 /* connect ----------------------------------------------------------- */
 
 .pm-connect {
-  border-top: 1px solid rgba(200, 162, 91, 0.28);
+  border-top: 1px solid var(--pm-edge);
   padding-top: 1.75rem;
 }
 
@@ -952,7 +978,7 @@
 }
 
 .pm-step-index {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   padding-top: 0.15rem;
@@ -996,7 +1022,7 @@
   position: absolute;
   inset: 0;
   width: 100%;
-  background: rgba(9, 9, 9, 0.72);
+  background: var(--pm-scrim);
   animation: pm-fade 420ms var(--pm-ease) both;
   cursor: default;
 }
@@ -1016,8 +1042,9 @@
   margin-top: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: #111111;
-  border-top: 1px solid rgba(200, 162, 91, 0.35);
+  background: var(--pm-raise);
+  color: var(--pm-ink);
+  border-top: 1px solid var(--pm-edge);
   padding: 1.25rem 1.25rem calc(2.5rem + env(safe-area-inset-bottom));
   animation: pm-sheet-up 640ms var(--pm-ease) both;
 }
@@ -1057,7 +1084,7 @@
 
 .pm-close:hover,
 .pm-close:focus-visible {
-  color: var(--pm-gold);
+  color: var(--pm-accent);
 }
 
 .pm-sheet-sync {
@@ -1123,12 +1150,12 @@
 }
 
 .pm-radio input[type='radio']:checked {
-  border-color: var(--pm-gold);
-  box-shadow: inset 0 0 0 3px var(--pm-gold);
+  border-color: var(--pm-accent);
+  box-shadow: inset 0 0 0 3px var(--pm-accent);
 }
 
 .pm-radio input[type='radio']:focus-visible {
-  outline: 2px solid var(--pm-gold);
+  outline: 2px solid var(--focus-ring, var(--pm-accent));
   outline-offset: 3px;
 }
 
@@ -1163,16 +1190,6 @@
 /* ------------------------------------------------------------ md and up */
 
 @media (min-width: 48rem) {
-  .pm-head,
-  .pm-main {
-    padding-left: 2.5rem;
-    padding-right: 2.5rem;
-  }
-
-  .pm-banner {
-    padding-inline: 2.5rem;
-  }
-
   .pm-stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 2rem;
@@ -1214,7 +1231,7 @@
     height: 100%;
     margin-top: 0;
     border-top: 0;
-    border-left: 1px solid rgba(200, 162, 91, 0.35);
+    border-left: 1px solid var(--pm-edge);
     padding: 2rem 2rem 3rem;
     animation-name: pm-sheet-in;
   }
@@ -1241,7 +1258,7 @@
 
   .pm-connect {
     border-top: 0;
-    border-left: 1px solid rgba(200, 162, 91, 0.28);
+    border-left: 1px solid var(--pm-edge);
     padding-top: 0;
     padding-left: 2.5rem;
   }

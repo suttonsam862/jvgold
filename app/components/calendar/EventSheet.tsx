@@ -5,106 +5,70 @@
  * traps focus, closes on Escape and on a scrim tap, and restores focus to
  * whatever opened it.
  *
- * HONESTY RULE: there is no backend. Saving writes to client state only, and
- * the UI says so in words — a "local preview" marker on the record and on the
- * submit button. Nothing here ever claims a server accepted anything.
+ * WHAT THE SHEET SHOWS
+ * --------------------
+ * A JV Gold block is a SESSION, so `view` prints his book's columns — package,
+ * training type, sessions used, paid, method, owed, stream — and where a value
+ * was reached through an alias it prints his verbatim cell underneath. `edit`
+ * and `create` are the same <SessionForm>, so there is exactly one way to enter
+ * a session and one way to change it.
+ *
+ * An imported Google event Jesse has not claimed stays READ ONLY: it renders in
+ * full and offers no edit control, because writing back before two-way sync
+ * exists would silently diverge from the copy on his phone.
+ *
+ * HONESTY RULE: there is no backend. Saving writes to client state only and the
+ * UI says so in words. Nothing here ever claims a server accepted anything.
  */
 
-import {memo, useCallback, useEffect, useId, useMemo, useRef, useState} from 'react';
-import type {CalendarEvent, IsoDate, SessionKind} from '~/lib/ops/types';
-import {formatMoney} from '~/lib/ops/types';
-import type {RosterEntry} from './layout';
+import {memo, useEffect, useId, useMemo, useRef} from 'react';
+import type {CalendarEvent, IsoDate} from '~/lib/ops/types';
+import {SessionForm} from './SessionForm';
+import type {
+  CalendarFormData,
+  SessionDraft,
+  SessionLog,
+} from './sessionModel';
 import {
-  KIND_LABEL,
-  inputTimeToMinutes,
-  longDate,
-  minutesOf,
-  minutesToInputTime,
-  rangeLabel,
-  toneOf,
-} from './layout';
+  centsLabel,
+  draftFromEvent,
+  emptyDraft,
+  logLines,
+} from './sessionModel';
+import {KIND_LABEL, longDate, minutesOf, rangeLabel, toneOf} from './layout';
 
 export type SheetMode = 'view' | 'edit' | 'create';
 
-/** The shape the form hands back. Times are `HH:MM`, dates `YYYY-MM-DD`. */
-export interface EventDraft {
-  id: string | null;
-  title: string;
-  date: IsoDate;
-  startTime: string;
-  endTime: string;
-  allDay: boolean;
-  kind: SessionKind;
-  location: string;
-  athleteIds: string[];
-  notes: string;
-}
-
-const KINDS: SessionKind[] = [
-  'private',
-  'partner',
-  'clinic',
-  'workout',
-  'camp',
-  'group',
-];
-
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function draftFrom(
-  event: CalendarEvent | null,
-  fallbackDate: IsoDate,
-): EventDraft {
-  if (!event) {
-    return {
-      id: null,
-      title: '',
-      date: fallbackDate,
-      startTime: '16:00',
-      endTime: '17:00',
-      allDay: false,
-      kind: 'private',
-      location: 'Riverside Mat Room',
-      athleteIds: [],
-      notes: '',
-    };
-  }
-  return {
-    id: event.id,
-    title: event.title,
-    date: event.start.slice(0, 10),
-    startTime: minutesToInputTime(minutesOf(event.start)),
-    endTime: minutesToInputTime(minutesOf(event.end)),
-    allDay: event.allDay,
-    kind: event.kind ?? 'group',
-    location: event.location ?? '',
-    athleteIds: event.athleteIds,
-    notes: event.description ?? '',
-  };
-}
 
 /* -------------------------------------------------------------------------- */
 
 interface EventSheetProps {
   mode: SheetMode;
   event: CalendarEvent | null;
-  /** Date a newly created event lands on. */
+  /** The book row behind the event, when there is one. */
+  log: SessionLog | null;
+  /** Date a newly logged session lands on. */
   defaultDate: IsoDate;
-  roster: RosterEntry[];
+  /** The browser's real date, read in an effect by the shell. */
+  todayDate: IsoDate;
+  data: CalendarFormData;
   /** True when this record only exists in this browser tab. */
   isLocal: boolean;
   onClose: () => void;
   onRequestEdit: () => void;
-  onSave: (draft: EventDraft) => void;
+  onSave: (draft: SessionDraft) => void;
   onRemove: (id: string) => void;
 }
 
 export function EventSheet({
   mode,
   event,
+  log,
   defaultDate,
-  roster,
+  todayDate,
+  data,
   isLocal,
   onClose,
   onRequestEdit,
@@ -125,6 +89,8 @@ export function EventSheet({
         (el) => el.offsetParent !== null || el === document.activeElement,
       );
 
+    // Nothing is autofocused into a text field on purpose: on a phone that
+    // raises the keyboard over the form the moment the sheet opens.
     const first =
       node.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0];
     first?.focus();
@@ -168,11 +134,31 @@ export function EventSheet({
     };
   }, [onClose]);
 
+  const initialDraft = useMemo<SessionDraft>(
+    () =>
+      mode === 'create' || !event
+        ? emptyDraft(defaultDate)
+        : draftFromEvent(event, log),
+    [defaultDate, event, log, mode],
+  );
+
+  /**
+   * READ-ONLY IS ENFORCED HERE, not just on the button that opens the form.
+   *
+   * An unclaimed Google event is a mirror of a row on Jesse's phone. Editing it
+   * before two-way sync exists would silently diverge from that copy, so the
+   * form is not reachable for one by ANY route — a stale `edit` mode, a
+   * restored history entry, a future caller — and the detail view is shown
+   * instead. The disabled button below is the courtesy; this is the rule.
+   */
+  const readOnly = mode !== 'create' && event?.readOnly === true;
+  const showForm = mode === 'create' || (mode === 'edit' && !readOnly);
+
   const heading =
     mode === 'create'
-      ? 'New event'
-      : mode === 'edit'
-        ? 'Edit event'
+      ? 'Log a lesson'
+      : mode === 'edit' && !readOnly
+        ? 'Edit lesson'
         : (event?.title ?? 'Event');
 
   return (
@@ -190,7 +176,13 @@ export function EventSheet({
         <div className="cal-sheet-head">
           <div className="min-w-0">
             <p className="tag text-gold-deep">
-              {mode === 'view' ? 'Event' : mode === 'edit' ? 'Editing' : 'Create'}
+              {readOnly
+                ? 'Imported · read only'
+                : mode === 'view'
+                  ? 'Lesson'
+                  : mode === 'edit'
+                    ? 'Editing'
+                    : 'New'}
             </p>
             <h2
               id={titleId}
@@ -216,21 +208,24 @@ export function EventSheet({
           </button>
         </div>
 
-        {mode === 'view' && event ? (
+        {!showForm && event ? (
           <EventDetail
             event={event}
-            roster={roster}
+            log={log}
+            data={data}
             isLocal={isLocal}
             onRequestEdit={onRequestEdit}
             onRemove={onRemove}
-            onClose={onClose}
           />
         ) : (
-          <EventForm
+          <SessionForm
             key={event?.id ?? 'new'}
-            initial={draftFrom(event, defaultDate)}
-            roster={roster}
+            initial={initialDraft}
+            data={data}
+            todayDate={todayDate}
+            focusedDate={defaultDate}
             isCreate={mode === 'create'}
+            isLocal={isLocal}
             onSave={onSave}
             onCancel={onClose}
           />
@@ -246,27 +241,28 @@ export function EventSheet({
 
 interface DetailProps {
   event: CalendarEvent;
-  roster: RosterEntry[];
+  log: SessionLog | null;
+  data: CalendarFormData;
   isLocal: boolean;
   onRequestEdit: () => void;
   onRemove: (id: string) => void;
-  onClose: () => void;
 }
 
 const EventDetail = memo(function EventDetail({
   event,
-  roster,
+  log,
+  data,
   isLocal,
   onRequestEdit,
   onRemove,
 }: DetailProps) {
-  const names = useMemo(
-    () =>
-      event.athleteIds
-        .map((id) => roster.find((r) => r.id === id)?.name ?? id)
-        .join(', '),
-    [event.athleteIds, roster],
-  );
+  const clientName = useMemo(() => {
+    const id = log?.clientId ?? event.athleteIds[0] ?? null;
+    if (!id) return null;
+    return data.clients.find((c) => c.id === id)?.name ?? null;
+  }, [data.clients, event.athleteIds, log]);
+
+  const lines = useMemo(() => (log ? logLines(log) : []), [log]);
 
   return (
     <>
@@ -287,31 +283,57 @@ const EventDetail = memo(function EventDetail({
           </span>
         </div>
 
-        <p className="cal-tabular mt-3 text-[0.9375rem]">
+        {clientName ? (
+          <p className="display mt-3 text-[1.0625rem] leading-tight">
+            {clientName}
+          </p>
+        ) : null}
+
+        <p className="cal-tabular mt-2 text-[0.9375rem]">
           {longDate(event.start.slice(0, 10))}
         </p>
         <p className="cal-tabular text-sm text-[color:var(--cal-dim)]">
+          {/* An all-day JV Gold block is a session whose clock he never wrote
+              down. It is never printed as "12:00 AM". */}
           {event.allDay
-            ? 'All day'
+            ? event.source === 'jvgold'
+              ? 'Time not recorded'
+              : 'All day'
             : rangeLabel(minutesOf(event.start), minutesOf(event.end))}
         </p>
 
         {isLocal ? (
-          <p className="cal-local mt-3">Local preview · not saved anywhere</p>
+          <p className="cal-local mt-3">Saved on this device · not synced</p>
         ) : null}
 
-        <dl className="mt-6 text-sm">
-          <Row label="Location" value={event.location ?? '—'} />
-          <Row label="Athletes" value={names || '—'} />
-          <Row
-            label="Value"
-            value={
-              event.amountCents != null ? formatMoney(event.amountCents) : '—'
-            }
-            tabular
-          />
+        {lines.length > 0 ? (
+          <dl className="mt-6 text-sm">
+            {lines.map((line) => (
+              <Row
+                key={line.label}
+                label={line.label}
+                value={line.value}
+                raw={line.raw}
+                tabular={line.tabular}
+              />
+            ))}
+          </dl>
+        ) : null}
+
+        <dl className={lines.length > 0 ? 'text-sm' : 'mt-6 text-sm'}>
+          <Row label="Location" value={event.location ?? '—'} raw={null} />
+          {lines.length === 0 ? (
+            <Row
+              label="Value"
+              value={
+                event.amountCents != null ? centsLabel(event.amountCents) : '—'
+              }
+              raw={null}
+              tabular
+            />
+          ) : null}
           {event.recurrence ? (
-            <Row label="Repeats" value={event.recurrence.label} />
+            <Row label="Repeats" value={event.recurrence.label} raw={null} />
           ) : null}
           {event.attendees.length > 0 ? (
             <Row
@@ -320,28 +342,35 @@ const EventDetail = memo(function EventDetail({
                 .map(
                   (a) =>
                     `${a.displayName}${
-                      a.responseStatus === 'accepted' ? '' : ` (${a.responseStatus})`
+                      a.responseStatus === 'accepted'
+                        ? ''
+                        : ` (${a.responseStatus})`
                     }`,
                 )
                 .join(', ')}
+              raw={null}
             />
           ) : null}
           {event.syncedAt ? (
             <Row
               label="Last pulled"
-              value={`${event.syncedAt.slice(0, 10)} ${event.syncedAt.slice(11, 16)}`}
+              value={`${event.syncedAt.slice(0, 10)} ${event.syncedAt.slice(
+                11,
+                16,
+              )}`}
+              raw={null}
               tabular
             />
           ) : null}
-          <Row label="Notes" value={event.description || '—'} />
+          <Row label="Notes" value={event.description || '—'} raw={null} />
         </dl>
 
         {event.readOnly ? (
           <p className="mt-6 border-t border-[color:var(--cal-line)] pt-4 text-xs leading-relaxed text-[color:var(--cal-dim)]">
-            This event was imported from Google Calendar and is read-only. Two-way
-            sync is not configured, so editing it here would silently diverge from
-            the copy on your phone. Connect Google Calendar with write scope to
-            edit it.
+            This event was imported from Google Calendar and is read-only.
+            Two-way sync is not configured, so editing it here would silently
+            diverge from the copy on your phone. Connect Google Calendar with
+            write scope to edit it.
           </p>
         ) : null}
       </div>
@@ -353,7 +382,7 @@ const EventDetail = memo(function EventDetail({
           disabled={event.readOnly}
           onClick={onRequestEdit}
         >
-          {event.readOnly ? 'Read only' : 'Edit'}
+          {event.readOnly ? 'Read only' : log ? 'Edit session' : 'Log as session'}
         </button>
         {event.readOnly ? null : (
           <button
@@ -361,7 +390,7 @@ const EventDetail = memo(function EventDetail({
             className="cal-ghost"
             onClick={() => onRemove(event.id)}
           >
-            Remove
+            Delete
           </button>
         )}
       </div>
@@ -372,10 +401,13 @@ const EventDetail = memo(function EventDetail({
 function Row({
   label,
   value,
+  raw,
   tabular = false,
 }: {
   label: string;
   value: string;
+  /** His verbatim cell, printed under the canonical label when they differ. */
+  raw: string | null;
   tabular?: boolean;
 }) {
   return (
@@ -385,196 +417,12 @@ function Row({
       </dt>
       <dd className={`min-w-0 flex-1 break-words ${tabular ? 'cal-tabular' : ''}`}>
         {value}
+        {raw ? (
+          <span className="cal-raw mt-0.5 block">
+            your book: “{raw}”
+          </span>
+        ) : null}
       </dd>
     </div>
-  );
-}
-
-/* --------------------------------------------------------------------------
- * Form
- * ------------------------------------------------------------------------ */
-
-interface FormProps {
-  initial: EventDraft;
-  roster: RosterEntry[];
-  isCreate: boolean;
-  onSave: (draft: EventDraft) => void;
-  onCancel: () => void;
-}
-
-function EventForm({initial, roster, isCreate, onSave, onCancel}: FormProps) {
-  const [draft, setDraft] = useState<EventDraft>(initial);
-  const [errors, setErrors] = useState<{title?: string; time?: string}>({});
-  const ids = useId();
-
-  const set = useCallback(
-    <K extends keyof EventDraft>(key: K, value: EventDraft[K]) =>
-      setDraft((d) => ({...d, [key]: value})),
-    [],
-  );
-
-  const toggleAthlete = useCallback((id: string) => {
-    setDraft((d) => ({
-      ...d,
-      athleteIds: d.athleteIds.includes(id)
-        ? d.athleteIds.filter((a) => a !== id)
-        : [...d.athleteIds, id],
-    }));
-  }, []);
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const next: {title?: string; time?: string} = {};
-    if (!draft.title.trim()) next.title = 'Give the event a title.';
-    if (!draft.allDay) {
-      const start = inputTimeToMinutes(draft.startTime);
-      const end = inputTimeToMinutes(draft.endTime);
-      if (start == null || end == null) next.time = 'Enter a valid start and end time.';
-      else if (end <= start) next.time = 'The end time has to be after the start.';
-    }
-    setErrors(next);
-    if (next.title || next.time) return;
-    onSave({...draft, title: draft.title.trim()});
-  };
-
-  return (
-    <form onSubmit={submit} className="contents">
-      <div className="cal-sheet-body">
-        <label className="cal-field">
-          <span className="cal-label">Title</span>
-          <input
-            data-autofocus
-            className="cal-input"
-            value={draft.title}
-            onChange={(e) => set('title', e.target.value)}
-            aria-invalid={errors.title ? true : undefined}
-            aria-describedby={errors.title ? `${ids}-title-err` : undefined}
-          />
-          {errors.title ? (
-            <span id={`${ids}-title-err`} className="cal-error" role="alert">
-              {errors.title}
-            </span>
-          ) : null}
-        </label>
-
-        <label className="cal-field">
-          <span className="cal-label">Date</span>
-          <input
-            type="date"
-            className="cal-input"
-            value={draft.date}
-            onChange={(e) => set('date', e.target.value)}
-          />
-        </label>
-
-        <label className="mb-4 flex items-center gap-2.5 text-sm">
-          <input
-            type="checkbox"
-            checked={draft.allDay}
-            onChange={(e) => set('allDay', e.target.checked)}
-            style={{width: 18, height: 18, accentColor: '#c8a25b'}}
-          />
-          <span>All day</span>
-        </label>
-
-        {draft.allDay ? null : (
-          <div className="flex gap-3">
-            <label className="cal-field flex-1">
-              <span className="cal-label">Start</span>
-              <input
-                type="time"
-                className="cal-input"
-                value={draft.startTime}
-                onChange={(e) => set('startTime', e.target.value)}
-                aria-invalid={errors.time ? true : undefined}
-                aria-describedby={errors.time ? `${ids}-time-err` : undefined}
-              />
-            </label>
-            <label className="cal-field flex-1">
-              <span className="cal-label">End</span>
-              <input
-                type="time"
-                className="cal-input"
-                value={draft.endTime}
-                onChange={(e) => set('endTime', e.target.value)}
-                aria-invalid={errors.time ? true : undefined}
-                aria-describedby={errors.time ? `${ids}-time-err` : undefined}
-              />
-            </label>
-          </div>
-        )}
-        {errors.time ? (
-          <p id={`${ids}-time-err`} className="cal-error -mt-2 mb-3" role="alert">
-            {errors.time}
-          </p>
-        ) : null}
-
-        <label className="cal-field">
-          <span className="cal-label">Kind</span>
-          <select
-            className="cal-select"
-            value={draft.kind}
-            onChange={(e) => set('kind', e.target.value as SessionKind)}
-          >
-            {KINDS.map((k) => (
-              <option key={k} value={k}>
-                {KIND_LABEL[k]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="cal-field">
-          <span className="cal-label">Location</span>
-          <input
-            className="cal-input"
-            value={draft.location}
-            onChange={(e) => set('location', e.target.value)}
-          />
-        </label>
-
-        <fieldset className="cal-field">
-          <legend className="cal-label">Athletes</legend>
-          <div className="cal-pills">
-            {roster.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                className="cal-pill"
-                aria-pressed={draft.athleteIds.includes(r.id)}
-                onClick={() => toggleAthlete(r.id)}
-              >
-                {r.name}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <label className="cal-field">
-          <span className="cal-label">Notes</span>
-          <textarea
-            className="cal-textarea"
-            value={draft.notes}
-            onChange={(e) => set('notes', e.target.value)}
-          />
-        </label>
-
-        <p className="cal-local">Saves to this browser only</p>
-        <p className="mt-2 text-xs leading-relaxed text-[color:var(--cal-dim)]">
-          There is no calendar backend wired up yet. Changes stay in this tab as a
-          preview and disappear on reload — nothing is written to Shopify, Supabase
-          or Google.
-        </p>
-      </div>
-
-      <div className="cal-sheet-foot">
-        <button type="submit" className="cal-primary">
-          {isCreate ? 'Add locally' : 'Update locally'}
-        </button>
-        <button type="button" className="cal-ghost" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-    </form>
   );
 }

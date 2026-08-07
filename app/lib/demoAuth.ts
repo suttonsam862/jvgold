@@ -1,7 +1,24 @@
 import {redirect} from 'react-router';
 
 /**
- * DEMO AUTH — NOT SHOPIFY CUSTOMER AUTH.
+ * DEMO AUTH — THE FALLBACK GATE, PLUS THE SESSION COOKIE REAL AUTH RIDES ON.
+ *
+ * TWO JOBS since Supabase landed:
+ *
+ *  1. THE SESSION COOKIE. Every dashboard (private.*, portal.*) is guarded by
+ *     `requireDemoRole`, which reads this cookie. Supabase sign-in happens in
+ *     the browser, and the login routes hand the resulting access token back
+ *     to their action, which VERIFIES it against Supabase (see
+ *     app/lib/supabase.ts) before calling `setDemoUser` here. So the cookie is
+ *     still the gate — it is just no longer a hardcoded password that opens
+ *     it. The email it carries is now a real, verified Supabase identity.
+ *
+ *  2. THE FALLBACK. When PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY are
+ *     absent, the login screens fall back to the credential check below so
+ *     the preview keeps working with zero setup. THAT MODE HAS NO SUPABASE
+ *     IDENTITY: `auth.uid()` is null, `public.is_staff()` is false and every
+ *     RLS-protected query returns an empty array. Never ship data work that
+ *     depends on this mode.
  *
  * One tiny module behind both preview gates:
  *   /private  → role 'coach'    (Jesse + staff management view)
@@ -133,6 +150,33 @@ export function setDemoUser(
 
 export function clearDemoUser(context: DemoAuthContext, role: DemoRole): void {
   context.session.unset(DEMO_SESSION_KEYS[role]);
+  // Signing out has to reach the browser too: supabase-js keeps its session in
+  // localStorage, which no server route can touch. Dropping only the cookie
+  // would leave a live Supabase session behind, and the login screen would
+  // offer to walk straight back in. Instead we leave a one-shot flag that the
+  // login screen consumes and turns into a real client-side signOut().
+  markSupabaseSignOut(context);
+}
+
+/* ==========================================================================
+ * SUPABASE SIGN-OUT HANDOFF
+ * ======================================================================== */
+
+/** One-shot "the browser still owes us a Supabase signOut()" flag. */
+export const SUPABASE_SIGNOUT_KEY = 'jvSupabaseSignOut';
+
+export function markSupabaseSignOut(context: DemoAuthContext): void {
+  context.session.set(SUPABASE_SIGNOUT_KEY, true);
+}
+
+/**
+ * Read the flag and clear it in one move, so the sign-out happens exactly
+ * once. Called from the two login loaders.
+ */
+export function consumeSupabaseSignOut(context: DemoAuthContext): boolean {
+  const pending = context.session.get(SUPABASE_SIGNOUT_KEY) === true;
+  if (pending) context.session.unset(SUPABASE_SIGNOUT_KEY);
+  return pending;
 }
 
 /**

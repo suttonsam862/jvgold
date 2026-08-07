@@ -219,15 +219,260 @@ html:not(.js) .dw-stat-rule {
 }
 
 /* ---------------------------------------------------------------------------
-   QUOTE
+   WORDMARK
+   The club's own gold mark. It is already gold, so it never gets the mono
+   filter the photographs get.
    --------------------------------------------------------------------------- */
-.dw-quote-mark {
+.dw-mark {
   display: block;
+  width: clamp(9rem, 16vw, 12.5rem);
+  height: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   HERO FACT STRIP
+   Hours, address, phone — the three things a parent is actually looking for,
+   sitting directly under the headline on hairlines rather than in cards.
+   --------------------------------------------------------------------------- */
+.dw-facts {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid rgba(230, 227, 221, 0.18);
+}
+.dw-facts > li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid rgba(230, 227, 221, 0.12);
+}
+@media (min-width: 768px) {
+  .dw-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 1px solid rgba(230, 227, 221, 0.12);
+  }
+  .dw-facts > li {
+    border-bottom: 0;
+    padding: 1.25rem 2rem 1.25rem 0;
+  }
+  .dw-facts > li + li {
+    border-left: 1px solid rgba(230, 227, 221, 0.12);
+    padding-left: 2rem;
+  }
+}
+.dw-fact-key {
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(230, 227, 221, 0.5);
+}
+.dw-fact-val {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(230, 227, 221, 0.92);
+}
+
+/* Phone / Instagram links: gold underline that thickens on hover. */
+.dw-phone {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(200, 162, 91, 0.65);
+  text-underline-offset: 0.28em;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-thickness var(--dur-fast, 320ms)
+    var(--ease-lux, ease);
+}
+.dw-phone:hover,
+.dw-phone:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   SCHEDULE + CONTACT
+   --------------------------------------------------------------------------- */
+.dw-sub {
   font-family: 'Bai Jamjuree', system-ui, sans-serif;
-  font-size: clamp(4rem, 12vw, 9rem);
-  line-height: 0.6;
-  color: rgba(200, 162, 91, 0.22);
-  user-select: none;
+  font-weight: 600;
+  font-size: 0.65rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--steel, #6b6b6b);
+}
+
+.dw-deflist {
+  margin-top: 1.25rem;
+  border-top: 1px solid rgba(26, 26, 26, 0.14);
+}
+.dw-deflist > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1.5rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.1);
+}
+.dw-deflist dt {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--steel, #6b6b6b);
+}
+.dw-deflist dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(26, 26, 26, 0.85);
+}
+
+/* ---------------------------------------------------------------------------
+   STANDARD BAND — scripture, values, plate
+   --------------------------------------------------------------------------- */
+.dw-scripture {
+  margin: 0;
+  padding-left: 1.5rem;
+  border-left: 1px solid rgba(200, 162, 91, 0.5);
+}
+
+.dw-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(230, 227, 221, 0.62);
+}
+.dw-values > li + li::before {
+  content: '·';
+  margin-right: 1.25rem;
+  color: rgba(200, 162, 91, 0.8);
+}
+
+.dw-plate {
+  margin: 0;
+  border: 1px solid rgba(200, 162, 91, 0.28);
+  padding: 0.6rem;
+}
+.dw-plate img {
+  display: block;
+  height: auto;
+}
+.dw-plate-cap {
+  margin-top: 0.85rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(230, 227, 221, 0.5);
+}
+
+/* ---------------------------------------------------------------------------
+   COACHES
+   --------------------------------------------------------------------------- */
+.dw-coach-plate {
+  overflow: hidden;
+  background: var(--onyx-deep, #111);
+  aspect-ratio: 4 / 5;
+}
+.dw-coach-plate img {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center top;
+  transform: scale(1);
+  transition: transform var(--dur-slow, 900ms) var(--ease-lux, ease);
+}
+.dw-coach:hover .dw-coach-plate img {
+  transform: scale(1.03);
+}
+
+/* ---------------------------------------------------------------------------
+   RATES + SPONSOR TIERS
+   Hairline rows, not price cards. The action lives at the end of the section,
+   because enrolment happens by phone, not in a cart.
+   --------------------------------------------------------------------------- */
+.dw-rates {
+  border-top: 1px solid rgba(26, 26, 26, 0.16);
+}
+.dw-rates > li {
+  display: grid;
+  gap: 0.75rem 3rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.1);
+}
+@media (min-width: 768px) {
+  .dw-rates > li {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: baseline;
+    padding: 1.9rem 0;
+  }
+}
+.dw-rate-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+}
+.dw-rate-unit {
+  margin-left: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--steel, #6b6b6b);
+}
+.dw-rate-detail {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(26, 26, 26, 0.68);
+}
+
+.dw-tiers {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid rgba(230, 227, 221, 0.18);
+}
+.dw-tiers > li {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(230, 227, 221, 0.12);
+}
+@media (min-width: 640px) {
+  .dw-tiers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .dw-tiers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-bottom: 1px solid rgba(230, 227, 221, 0.12);
+  }
+  .dw-tiers > li {
+    border-bottom: 0;
+    padding: 1.9rem 2rem 1.9rem 0;
+  }
+  .dw-tiers > li + li {
+    border-left: 1px solid rgba(230, 227, 221, 0.12);
+    padding-left: 2rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   BELT WALL
+   --------------------------------------------------------------------------- */
+.dw-belts {
+  margin: 0;
+  max-width: 62rem;
+}
+.dw-belts img {
+  display: block;
+  height: auto;
+  border: 1px solid rgba(26, 26, 26, 0.12);
+}
+.dw-belts .dw-plate-cap {
+  color: var(--steel, #6b6b6b);
 }
 
 /* ---------------------------------------------------------------------------
@@ -259,6 +504,15 @@ html:not(.js) .dw-stat-rule {
   color: var(--stone, #e6e3dd);
 }
 
+/* Inverted variant for the onyx bands: the wipe is stone, the text goes dark. */
+.dw-cta-light::before {
+  background: var(--stone, #e6e3dd);
+}
+.dw-cta-light:hover > span,
+.dw-cta-light:focus-visible > span {
+  color: var(--onyx-deep, #111111);
+}
+
 /* ---------------------------------------------------------------------------
    REDUCED MOTION — neutralise everything above.
    --------------------------------------------------------------------------- */
@@ -270,8 +524,13 @@ html:not(.js) .dw-stat-rule {
   .dw-hairline,
   .dw-stat-rule,
   .dw-cta::before,
-  .dw-cta > span {
+  .dw-cta > span,
+  .dw-phone,
+  .dw-coach-plate img {
     transition: none;
+  }
+  .dw-coach:hover .dw-coach-plate img {
+    transform: none;
   }
   .dw-hairline,
   .dw-stat-rule {

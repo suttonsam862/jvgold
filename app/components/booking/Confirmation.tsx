@@ -1,11 +1,14 @@
 import {useEffect, useRef} from 'react';
-import {formatMoney} from '~/lib/offerings';
-import type {AthleteDetails, Offering, Quote} from '~/lib/offerings';
+import {RenewalDisclosure} from './RenewalDisclosure';
+import {formatMoney, rateCopy} from '~/lib/offerings';
+import type {Offering, Quote, RequestDetails} from '~/lib/offerings';
 
 interface ConfirmationProps {
   offering: Offering;
   quote: Quote;
-  details: AthleteDetails;
+  /** Camp bookings are confirmed to a host, not a parent. */
+  host?: boolean;
+  details: RequestDetails;
   reference: string;
   onBookAnother: () => void;
 }
@@ -13,11 +16,13 @@ interface ConfirmationProps {
 export function Confirmation({
   offering,
   quote,
+  host = false,
   details,
   reference,
   onBookAnother,
 }: ConfirmationProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const rate = rateCopy(quote);
 
   // Move focus to the confirmation so screen readers land on the outcome.
   useEffect(() => {
@@ -38,19 +43,26 @@ export function Confirmation({
         <p className="mt-6 max-w-lg leading-relaxed text-stone/70">
           Every request is read personally — no queue, no auto-scheduler. You&rsquo;ll
           hear back at <span className="text-stone">{details.email}</span> within
-          24 hours with confirmation and a payment link. Nothing has been charged.
+          24 hours with{' '}
+          {host ? 'the dates confirmed and an agreement' : 'confirmation and a payment link'}.
+          Nothing has been charged.
         </p>
 
         <ol className="mt-10 flex flex-col gap-5">
-          {[
-            'Jesse confirms the time and sends a payment link.',
-            quote.cadence === 'deposit'
-              ? 'Your deposit reserves the bed; the balance is invoiced later.'
-              : quote.cadence === 'monthly'
-                ? 'Billing starts on the day of your first session, monthly after that.'
-                : 'Payment is settled before the session starts.',
-            'Show up ten minutes early, shoes and water bottle in hand.',
-          ].map((line, i) => (
+          {(host
+            ? [
+                'Jesse confirms the dates and sends the agreement and deposit link.',
+                'The deposit holds every day of the block; the balance is invoiced before day one.',
+                'He builds the days around your room — schedule, level and mat count.',
+              ]
+            : [
+                'Jesse confirms the time and sends a payment link.',
+                rate.isMonthly
+                  ? 'Billing starts on the day of your first session, monthly after that.'
+                  : 'Payment is settled before the session starts.',
+                'Show up ten minutes early, shoes and water bottle in hand.',
+              ]
+          ).map((line, i) => (
             <li key={line} className="flex gap-4">
               <span className="display bk-money text-gold">
                 {String(i + 1).padStart(2, '0')}
@@ -82,14 +94,54 @@ export function Confirmation({
               <dd className="text-sm leading-snug text-stone/80">{line.value}</dd>
             </div>
           ))}
-          <div className="flex gap-4">
-            <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
-              Athlete
-            </dt>
-            <dd className="text-sm leading-snug text-stone/80">
-              {details.athleteName} · {details.age} · {details.grade}
-            </dd>
-          </div>
+          {host ? (
+            <>
+              <div className="flex gap-4">
+                <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
+                  Host
+                </dt>
+                <dd className="text-sm leading-snug text-stone/80">
+                  {details.organisation}
+                  <br />
+                  {details.contactName}
+                </dd>
+              </div>
+              <div className="flex gap-4">
+                <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
+                  Venue
+                </dt>
+                <dd className="text-sm leading-snug text-stone/80">
+                  {details.venue}
+                </dd>
+              </div>
+              <div className="flex gap-4">
+                <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
+                  The room
+                </dt>
+                <dd className="text-sm leading-snug text-stone/80">
+                  ~{details.athleteCount} athletes · {details.ageRange} ·{' '}
+                  {details.skillRange}
+                </dd>
+              </div>
+              <div className="flex gap-4">
+                <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
+                  Flexibility
+                </dt>
+                <dd className="text-sm leading-snug text-stone/80">
+                  {details.dateFlexibility}
+                </dd>
+              </div>
+            </>
+          ) : (
+            <div className="flex gap-4">
+              <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
+                Athlete
+              </dt>
+              <dd className="text-sm leading-snug text-stone/80">
+                {details.athleteName} · {details.age} · {details.grade}
+              </dd>
+            </div>
+          )}
           <div className="flex gap-4">
             <dt className="w-24 shrink-0 text-[0.6rem] uppercase tracking-[0.18em] text-stone/40">
               Contact
@@ -119,12 +171,12 @@ export function Confirmation({
             </span>
             <span className="bk-amount display bk-money text-3xl text-stone">
               {formatMoney(quote.dueNow)}
-              {quote.cadence === 'monthly' ? (
-                <span className="ml-1 text-sm text-stone/50">/mo</span>
+              {rate.suffix ? (
+                <span className="ml-1 text-sm text-stone/50">{rate.suffix}</span>
               ) : null}
             </span>
           </div>
-          {quote.cadence === 'deposit' && quote.balance !== null ? (
+          {rate.isDeposit && quote.balance !== null ? (
             <div className="mt-4 flex flex-col gap-2 border-t bk-hairline pt-4">
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-[0.6rem] uppercase tracking-[0.18em] text-stone/45">
@@ -146,11 +198,20 @@ export function Confirmation({
           ) : quote.balanceLabel ? (
             <p className="mt-3 text-xs leading-relaxed text-stone/55">
               {quote.balanceLabel}
-              {quote.cadence === 'monthly'
-                ? '. Recurring every month, not a one-time total.'
-                : ''}
+              {rate.isMonthly ? `. ${rate.billingLine}` : ''}
             </p>
           ) : null}
+
+          {/*
+           * The terms restated on the acknowledgement, in the same conspicuous
+           * form they were agreed in — California requires the buyer to be left
+           * holding the renewal terms and the cancellation policy, not just to
+           * have passed a checkbox on the way through.
+           */}
+          {quote.renewal ? (
+            <RenewalDisclosure renewal={quote.renewal} className="mt-5" />
+          ) : null}
+
           <p className="mt-4 text-[0.65rem] leading-relaxed text-stone/40">
             24-hour cancellation policy. {quote.terms}
           </p>

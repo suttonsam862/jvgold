@@ -1,9 +1,19 @@
-/* Styles scoped to the /portal parent-and-athlete preview: the sign-in screen
-   and the dashboard behind it. Deliberately a sibling of private.css — same
-   motion curve, same hairline weights — so the two gates read as one system.
-   Plain CSS only; Tailwind utilities cover the layout, this carries what they
-   can't: the field underline sweep, gold focus rings, the mark draw-in, and
-   the package meter. */
+/* Styles scoped to /portal — the family sign-in screen and the dashboard
+   behind it. Deliberately a sibling of private.css — same motion curve, same
+   hairline weights — so the two doors read as one system. Plain CSS only;
+   Tailwind utilities cover the layout, this carries what they can't: the
+   field underline sweep, the submit wipe, the mark draw-in, the package
+   meter.
+
+   COLOUR RULE (identical to private.css). The sign-in screen renders inside
+   `.ops` (light register), so everything below reads semantic tokens —
+   --ink, --ink-mute, --line, --selected-bg — never a raw brand colour. On the
+   warm stone ground gold is 1.87:1 as type and steel is 4.16:1, so both are
+   banned as text; gold survives as a FILL only (the underline sweep, the
+   submit plate), with --selected-ink on top of it at 7.95:1.
+
+   Fallback values are supplied on every var() so these classes still look
+   right if they ever render outside an .ops subtree. */
 
 /* ---------------------------------------------------------------- fields */
 
@@ -15,9 +25,9 @@
 .portal-field {
   background: transparent;
   border: 0;
-  border-bottom: 1px solid rgba(230, 227, 221, 0.22);
+  border-bottom: 1px solid var(--line-strong, rgba(26, 26, 26, 0.28));
   border-radius: 0;
-  color: #e6e3dd;
+  color: var(--ink, #1a1a1a);
   font-size: 1rem;
   letter-spacing: 0.01em;
   padding-block: 0.85rem 0.7rem;
@@ -26,23 +36,25 @@
 }
 
 .portal-field::placeholder {
-  color: rgba(230, 227, 221, 0.28);
+  color: var(--ink-mute, #5a5a5a);
+  opacity: 0.75;
   letter-spacing: 0.04em;
 }
 
 .portal-field:focus {
-  border-bottom-color: rgba(230, 227, 221, 0.22);
+  border-bottom-color: var(--line-strong, rgba(26, 26, 26, 0.28));
   outline: none;
 }
 
-/* Gold underline sweeps in from the left under the hairline. */
+/* Gold underline sweeps in from the left under the hairline — a FILL, the
+   one role gold is allowed on a light ground. */
 .portal-field-shell::after {
   content: '';
   position: absolute;
   inset-inline: 0;
   bottom: 0;
   height: 1px;
-  background: #c8a25b;
+  background: var(--accent-fill, #c8a25b);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -53,18 +65,18 @@
   transform: scaleX(1);
 }
 
+/* The register's own focus ring does the work; this only widens the offset. */
 .portal-field:focus-visible {
-  outline: 1px solid rgba(200, 162, 91, 0.75);
   outline-offset: 6px;
 }
 
-/* Keep Chrome's autofill from painting a white slab over the near-black. */
+/* Keep Chrome's autofill from painting its own slab over the register. */
 .portal-field:-webkit-autofill,
 .portal-field:-webkit-autofill:hover,
 .portal-field:-webkit-autofill:focus {
-  -webkit-text-fill-color: #e6e3dd;
-  -webkit-box-shadow: 0 0 0 1000px #111 inset;
-  caret-color: #c8a25b;
+  -webkit-text-fill-color: var(--ink, #1a1a1a);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface, #e6e3dd) inset;
+  caret-color: var(--ink, #1a1a1a);
   transition: background-color 100000s ease-in-out 0s;
 }
 
@@ -74,6 +86,10 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  border: 1px solid var(--line-strong, rgba(26, 26, 26, 0.28));
+  color: var(--ink, #1a1a1a);
+  cursor: pointer;
+  transition: color 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Gold fill wipes up from the baseline instead of a flat colour swap. */
@@ -81,7 +97,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: #c8a25b;
+  background: var(--selected-bg, #c8a25b);
   transform: scaleY(0);
   transform-origin: bottom center;
   transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -93,14 +109,11 @@
   transform: scaleY(1);
 }
 
+/* Onyx on the gold plate — 7.95:1. */
 .portal-submit:hover:not(:disabled),
 .portal-submit:focus-visible:not(:disabled) {
-  color: #111;
-}
-
-.portal-submit:focus-visible {
-  outline: 1px solid rgba(200, 162, 91, 0.75);
-  outline-offset: 5px;
+  border-color: var(--selected-line, #a8853f);
+  color: var(--selected-ink, #0e0e0e);
 }
 
 .portal-submit:disabled {
@@ -108,10 +121,52 @@
   opacity: 0.45;
 }
 
-/* Ghost action — hairline box, gold on hover. */
-.portal-action:focus-visible {
-  outline: 1px solid rgba(200, 162, 91, 0.75);
-  outline-offset: 5px;
+/* Inline text action — bronze (--ink-accent, 4.74:1), underlined, so it never
+   relies on colour alone. */
+.portal-action {
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--ink-accent, #7a5e29) 50%,
+    transparent
+  );
+  transition: text-decoration-color 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.portal-action:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ------------------------------------------------------- login furniture */
+
+/* The photo plate beside the form — a dark object on the light page. It
+   carries .ops-dark in the markup, so gold IS legible as type inside it. */
+.portal-plate {
+  min-height: 30rem;
+  background: var(--surface, #111111);
+}
+
+.portal-plate-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(14, 14, 14, 0.92),
+    rgba(14, 14, 14, 0.35) 55%,
+    rgba(14, 14, 14, 0.15)
+  );
+}
+
+.portal-plate-copy {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 2.5rem;
+}
+
+@media (min-width: 1280px) {
+  .portal-plate-copy {
+    padding: 3.5rem;
+  }
 }
 
 /* -------------------------------------------------------------- monogram */
@@ -131,6 +186,9 @@
 /* ----------------------------------------------------------------- error */
 
 .portal-error {
+  /* Type is --ink-warn (5.70:1 on stone) via .ops-warn in the markup; the
+     rule beside it matches. */
+  border-color: var(--ink-warn, #9a3412);
   animation: portal-error-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -244,7 +302,9 @@
 @media (prefers-reduced-motion: reduce) {
   .portal-field,
   .portal-field-shell::after,
+  .portal-submit,
   .portal-submit::before,
+  .portal-action,
   .portal-table tbody tr {
     transition: none;
   }
